@@ -29,6 +29,14 @@
       "logo": "img/webradio-nrj.png"
     },
     {
+      "freq": 986,
+      "name": "R.Alfa",
+      "rds": "Hit Music Only",
+      "url": "https://n32a-eu.rcs.revma.com/amrbkhqtkm0uv?rj-ttl=5&rj-tok=AAABmqMYXjQAwgI6eJQzoCwBDw",
+      "logo": "img/Radio_Alfa.png"
+    },
+    
+    {
       "freq": 993,
       "name": "RTL",
       "rds": "Talk / actualité",
@@ -112,6 +120,15 @@
       "logo": "img/webradio-nrj.png",
       "tags": ["Hits", "France"]
     },
+    {
+      "id": "nrj",
+      "name": "R.Alfa",
+      "description": "Hit Music Only",
+      "url": "https://n32a-eu.rcs.revma.com/amrbkhqtkm0uv?rj-ttl=5&rj-tok=AAABmqMYXjQAwgI6eJQzoCwBDw",
+      "logo": "img/Radio_Alfa.png",
+      "tags": ["Hits", "France"]
+    },
+    
     {
       "id": "fun-radio",
       "name": "Fun Radio",
