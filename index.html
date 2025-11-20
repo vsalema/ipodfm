@@ -1122,59 +1122,107 @@
   let isPlaying = false;
   let battery = 0.7;
 
-  // Favoris
-  let favorites = {
-    fm: [],
-    webradio: []
+  // -----------------------------
+  // GESTIONNAIRE DE FAVORIS
+  // -----------------------------
+  // Stockage dans localStorage :
+  // {
+  //   fm:      [ { freq: 881, name: "France Inter" }, ... ],
+  //   webradio:[ "france-inter", "nrj", ... ]
+  // }
+
+  const favoriteManager = {
+    key: "neo-favorites-v2",
+    data: { fm: [], webradio: [] },
+
+    load() {
+      try {
+        const raw = localStorage.getItem(this.key);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        this.data.fm = Array.isArray(parsed.fm) ? parsed.fm : [];
+        this.data.webradio = Array.isArray(parsed.webradio) ? parsed.webradio : [];
+      } catch (e) {
+        this.data = { fm: [], webradio: [] };
+      }
+    },
+
+    save() {
+      try {
+        localStorage.setItem(this.key, JSON.stringify(this.data));
+      } catch (e) {}
+    },
+
+    // ----- FM -----
+    isFMFavorite(station) {
+      if (!station) return false;
+      return this.data.fm.some(
+        (f) => f.freq === station.freq && f.name === station.name
+      );
+    },
+
+    toggleFM(station) {
+      if (!station) return;
+      const idx = this.data.fm.findIndex(
+        (f) => f.freq === station.freq && f.name === station.name
+      );
+      if (idx === -1) {
+        this.data.fm.push({ freq: station.freq, name: station.name });
+      } else {
+        this.data.fm.splice(idx, 1);
+      }
+      this.save();
+    },
+
+    getFMFavorites() {
+      return this.data.fm;
+    },
+
+    // ----- WebRadio -----
+    isWebFavorite(station) {
+      if (!station || !station.id) return false;
+      return this.data.webradio.includes(station.id);
+    },
+
+    toggleWeb(station) {
+      if (!station || !station.id) return;
+      const id = station.id;
+      const idx = this.data.webradio.indexOf(id);
+      if (idx === -1) {
+        this.data.webradio.push(id);
+      } else {
+        this.data.webradio.splice(idx, 1);
+      }
+      this.save();
+    },
+
+    getWebFavorites() {
+      return this.data.webradio;
+    }
   };
 
-  function loadFavorites() {
-    try {
-      const raw = localStorage.getItem("neo-favorites");
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      favorites.fm = parsed.fm || [];
-      favorites.webradio = parsed.webradio || [];
-    } catch (e) {
-      favorites = { fm: [], webradio: [] };
-    }
+  function isFavoriteFM(station) {
+    return favoriteManager.isFMFavorite(station);
   }
-
-  function saveFavorites() {
-    try {
-      localStorage.setItem("neo-favorites", JSON.stringify(favorites));
-    } catch (e) {}
-  }
-
-  function isFavorite(type, name) {
-    const list = favorites[type] || [];
-    return list.includes(name);
+  function isFavoriteWeb(station) {
+    return favoriteManager.isWebFavorite(station);
   }
 
   function toggleFavoriteCurrentStation() {
     if (mode === "radio" && currentFMStation) {
-      const name = currentFMStation.name;
-      const list = favorites.fm;
-      const idx = list.indexOf(name);
-      if (idx === -1) list.push(name);
-      else list.splice(idx, 1);
-      saveFavorites();
+      favoriteManager.toggleFM(currentFMStation);
       updateFrequencyDisplay(parseInt(freqSlider.value, 10));
       renderFavorites();
     } else if (mode === "webradio") {
       const st = webRadios[currentWebRadioIndex];
       if (!st) return;
-      const name = st.name;
-      const list = favorites.webradio;
-      const idx = list.indexOf(name);
-      if (idx === -1) list.push(name);
-      else list.splice(idx, 1);
-      saveFavorites();
+      favoriteManager.toggleWeb(st);
       renderWebRadioList();
       renderFavorites();
     }
   }
 
+  // Touche F = ajout / retrait favoris
   document.addEventListener("keydown", (e) => {
     if (e.key.toLowerCase() === "f") {
       toggleFavoriteCurrentStation();
@@ -1354,7 +1402,7 @@
     });
   });
 
-  // Onglets
+  // ONGLET / MODE
   function showTab(tabName) {
     mode = tabName;
     currentTabIndex = tabOrder.indexOf(tabName);
@@ -1410,7 +1458,6 @@
     const mhz = (value / 10).toFixed(1);
     freqValue.innerHTML = mhz + '<span>MHz</span>';
 
-    // Sécurité si aucune station n'est encore chargée
     if (!fmStations.length) {
       currentFMStation = null;
       stationName.textContent = "Bruitage";
@@ -1433,7 +1480,7 @@
 
     if (minDiff <= 4) {
       currentFMStation = closest;
-      const favPrefix = isFavorite("fm", closest.name) ? "★ " : "☆ ";
+      const favPrefix = isFavoriteFM(closest) ? "★ " : "☆ ";
       stationName.textContent = favPrefix + closest.name;
       rdsText.textContent = closest.rds;
       radioHeroTitle.textContent = closest.name;
@@ -1615,7 +1662,7 @@
       }
       item.dataset.index = index;
 
-      const favPrefix = isFavorite("webradio", st.name) ? "★ " : "☆ ";
+      const favPrefix = isFavoriteWeb(st) ? "★ " : "☆ ";
 
       item.innerHTML =
         '<div class="webradio-name">' +
@@ -1683,11 +1730,15 @@
   const favoritesWebEl = document.getElementById("favorites-webradio");
 
   function getFavoriteFMStations() {
-    return fmStations.filter(st => favorites.fm.includes(st.name));
+    const favDefs = favoriteManager.getFMFavorites(); // [{freq,name}, ...]
+    return fmStations.filter(st =>
+      favDefs.some(f => f.freq === st.freq && f.name === st.name)
+    );
   }
 
   function getFavoriteWebRadios() {
-    return webRadios.filter(st => favorites.webradio.includes(st.name));
+    const favIds = favoriteManager.getWebFavorites(); // ["id1","id2"]
+    return webRadios.filter(st => favIds.includes(st.id));
   }
 
   function renderFavorites() {
@@ -1730,7 +1781,7 @@
         item.innerHTML =
           "<span>★ " + st.name + "</span><span>▶</span>";
         item.addEventListener("click", () => {
-          const index = webRadios.findIndex(r => r.name === st.name);
+          const index = webRadios.findIndex(r => r.id === st.id);
           if (index !== -1) {
             loadWebRadio(index);
             showTab("webradio");
@@ -1889,14 +1940,10 @@
       fmStations = data.fmStations || [];
       webRadios = data.webRadios || [];
 
-      // Met à jour l’affichage FM avec la valeur actuelle du slider
       updateFrequencyDisplay(parseInt(freqSlider.value, 10));
-
-      // Reconstruit la liste WebRadio et charge la première
       renderWebRadioList();
       loadWebRadio(currentWebRadioIndex);
 
-      // Si on est sur l’onglet Favoris, on rafraîchit
       if (mode === "favorites") {
         renderFavorites();
       }
@@ -1907,13 +1954,14 @@
   }
 
   // INIT
-  loadFavorites();
+  favoriteManager.load();
   renderPlaylist();
   loadTrack(currentTrackIndex);
   applyEqPreset("flat");
   showTab("radio");
   loadStationData();
 </script>
+
 
 </body>
 </html>
