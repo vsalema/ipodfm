@@ -1443,59 +1443,55 @@
 
   let fmStations = [];
 
-  const stationLogos = {
-    "France Inter": "img/webradio-franceinter.png",
-    "franceinfo:": "img/webradio-franceinfo.png",
-    "Fun Radio": "img/webradio-funradio.png",
-    "NRJ": "img/webradio-nrj.png",
-    "RTL": "img/webradio-rtl.png",
-    "Europe 1": "img/webradio-europe1.png",
-    "Skyrock": "img/webradio-skyrock.png",
-    Bruitage: "img/radio-default.png"
-  };
-
   function updateFrequencyDisplay(value) {
-    const mhz = (value / 10).toFixed(1);
-    freqValue.innerHTML = mhz + '<span>MHz</span>';
+  const mhz = (value / 10).toFixed(1);
+  freqValue.innerHTML = mhz + '<span>MHz</span>';
 
-    if (!fmStations.length) {
-      currentFMStation = null;
-      stationName.textContent = "Bruitage";
-      rdsText.textContent = "Chargement des stations…";
-      radioHeroTitle.textContent = "Chargement…";
-      radioHeroSub.textContent = "Patiente un instant";
-      radioLogo.src = stationLogos.Bruitage;
-      return;
-    }
+  // Si les stations ne sont pas encore chargées
+  if (!fmStations.length) {
+    currentFMStation = null;
+    stationName.textContent = "Bruitage";
+    rdsText.textContent = "Chargement des stations…";
+    radioHeroTitle.textContent = "Chargement…";
+    radioHeroSub.textContent = "Patiente un instant";
+    radioLogo.src = DEFAULT_LOGO;
+    return;
+  }
 
-    let closest = fmStations[0];
-    let minDiff = Math.abs(value - fmStations[0].freq);
-    for (let i = 1; i < fmStations.length; i++) {
-      const diff = Math.abs(value - fmStations[i].freq);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closest = fmStations[i];
-      }
-    }
-
-    if (minDiff <= 4) {
-      currentFMStation = closest;
-      const favPrefix = isFavoriteFM(closest) ? "★ " : "☆ ";
-      stationName.textContent = favPrefix + closest.name;
-      rdsText.textContent = closest.rds;
-      radioHeroTitle.textContent = closest.name;
-      radioHeroSub.textContent = closest.rds;
-      const logoSrc = stationLogos[closest.name] || stationLogos.Bruitage;
-      radioLogo.src = logoSrc;
-    } else {
-      currentFMStation = null;
-      stationName.textContent = "Bruitage";
-      rdsText.textContent = "Hors station";
-      radioHeroTitle.textContent = "Aucune station";
-      radioHeroSub.textContent = "Tourne le tuner…";
-      radioLogo.src = stationLogos.Bruitage;
+  // Chercher la station FM la plus proche
+  let closest = fmStations[0];
+  let minDiff = Math.abs(value - fmStations[0].freq);
+  for (let i = 1; i < fmStations.length; i++) {
+    const diff = Math.abs(value - fmStations[i].freq);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closest = fmStations[i];
     }
   }
+
+  if (minDiff <= 4) {
+    // "Lock" sur une station
+    currentFMStation = closest;
+    const favPrefix = isFavoriteFM(closest) ? "★ " : "☆ ";
+
+    stationName.textContent = favPrefix + closest.name;
+    rdsText.textContent = closest.rds;
+    radioHeroTitle.textContent = closest.name;
+    radioHeroSub.textContent = closest.rds;
+
+    // 🎯 automatique : on prend le logo du JSON, sinon le logo par défaut
+    radioLogo.src = closest.logo || DEFAULT_LOGO;
+  } else {
+    // Hors station
+    currentFMStation = null;
+    stationName.textContent = "Bruitage";
+    rdsText.textContent = "Hors station";
+    radioHeroTitle.textContent = "Aucune station";
+    radioHeroSub.textContent = "Tourne le tuner…";
+    radioLogo.src = DEFAULT_LOGO;
+  }
+}
+
 
   freqSlider.addEventListener("input", (e) => {
     updateFrequencyDisplay(parseInt(e.target.value, 10));
@@ -1639,19 +1635,9 @@
   const webradioStatusEl = document.getElementById("webradio-status");
 
   let webRadios = [];
+  const DEFAULT_LOGO = "img/radio-default.png";
 
-  const webRadioLogos = {
-    "France Inter": "img/webradio-franceinter.png",
-    "franceinfo:": "img/webradio-franceinfo.png",
-    "Fun Radio": "img/webradio-funradio.png",
-    "NRJ": "img/webradio-nrj.png",
-    "RTL": "img/webradio-rtl.png",
-    "Europe 1": "img/webradio-europe1.png",
-    "Skyrock": "img/webradio-skyrock.png",
-    "OUI FM": "img/webradio-ouifm.png",
-    default: "img/radio-default.png",
-  };
-
+  
   function renderWebRadioList() {
     webradioListEl.innerHTML = "";
     webRadios.forEach((st, index) => {
@@ -1686,23 +1672,25 @@
     });
   }
 
-  function loadWebRadio(index) {
-    if (!webRadios.length) return;
+ function loadWebRadio(index) {
+  if (!webRadios.length) return;
 
-    if (index < 0) index = webRadios.length - 1;
-    if (index >= webRadios.length) index = 0;
+  if (index < 0) index = webRadios.length - 1;
+  if (index >= webRadios.length) index = 0;
 
-    currentWebRadioIndex = index;
-    const st = webRadios[index];
-    audio.src = st.url;
+  currentWebRadioIndex = index;
+  const st = webRadios[index];
+  audio.src = st.url;
 
-    webradioTitleEl.textContent = st.name;
-    webradioSubEl.textContent = st.description;
-    const logoSrc = webRadioLogos[st.name] || webRadioLogos.default;
-    webradioLogoEl.src = logoSrc;
+  webradioTitleEl.textContent = st.name;
+  webradioSubEl.textContent = st.description;
 
-    updateWebRadioListActive();
-  }
+  // 🎯 automatique : logo depuis stations.json, sinon logo par défaut
+  webradioLogoEl.src = st.logo || DEFAULT_LOGO;
+
+  updateWebRadioListActive();
+}
+
 
   function playWebRadio() {
     if (!audio.src) {
