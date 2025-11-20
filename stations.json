@@ -60,7 +60,7 @@
       "freq": 1043,
       "name": "RMC",
       "rds": "Info & sport",
-      "url": "https://rmc.bfmtv.com/rmcinfo-mp3",
+      "url": "https://audio.bfmtv.com/rmcradio_128.mp3?aw_0_1st.playerId=RMC_audio_web&aw_0_1st.aggregator=RMC_audio_web",
       "logo": "img/webradio-rmc.png"
     },
     {
@@ -148,7 +148,7 @@
       "id": "rmc",
       "name": "RMC",
       "description": "Info & sport",
-      "url": "https://rmc.bfmtv.com/rmcinfo-mp3",
+      "url": "https://audio.bfmtv.com/rmcradio_128.mp3?aw_0_1st.playerId=RMC_audio_web&aw_0_1st.aggregator=RMC_audio_web",
       "logo": "img/webradio-rmc.png",
       "tags": ["Info", "Sport"]
     },
