@@ -74,7 +74,7 @@
       "freq": 1079,
       "name": "OUI FM",
       "rds": "La radio du rock",
-      "url": "http://stream.ouifm.fr/ouifm-high.mp3",
+      "url": "https://ouifm.ice.infomaniak.ch/ouifm-high.mp3",
       "logo": "img/webradio-ouifm.png"
     }
   ],
@@ -164,7 +164,7 @@
       "id": "ouifm",
       "name": "OUI FM",
       "description": "La radio du rock",
-      "url": "http://stream.ouifm.fr/ouifm-high.mp3",
+      "url": "https://ouifm.ice.infomaniak.ch/ouifm-high.mp3",
       "logo": "img/webradio-ouifm.png",
       "tags": ["Rock"]
     }
