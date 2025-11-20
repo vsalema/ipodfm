@@ -1065,6 +1065,63 @@ audio.crossOrigin = "anonymous";
     let vizDataArray = null;
     let vizBufferLength = 0;
     let vizMode = "off";
+// Favoris (nom de station)
+let favorites = {
+  fm: [],
+  webradio: []
+};
+
+function loadFavorites() {
+  try {
+    const raw = localStorage.getItem("neo-favorites");
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    favorites.fm = parsed.fm || [];
+    favorites.webradio = parsed.webradio || [];
+  } catch (e) {
+    favorites = { fm: [], webradio: [] };
+  }
+}
+
+function saveFavorites() {
+  try {
+    localStorage.setItem("neo-favorites", JSON.stringify(favorites));
+  } catch (e) {}
+}
+
+function isFavorite(mode, name) {
+  const list = favorites[mode] || [];
+  return list.includes(name);
+}
+
+/**
+ * Toggle le favori sur la station courante
+ * - en FM : currentFMStation
+ * - en WebRadio : webRadios[currentWebRadioIndex]
+ */
+function toggleFavoriteCurrentStation() {
+  if (mode === "radio" && currentFMStation) {
+    const name = currentFMStation.name;
+    const list = favorites.fm;
+    const idx = list.indexOf(name);
+    if (idx === -1) list.push(name);
+    else list.splice(idx, 1);
+    saveFavorites();
+    // rafraîchir l'affichage FM
+    updateFrequencyDisplay(parseInt(freqSlider.value, 10));
+  } else if (mode === "webradio") {
+    const st = webRadios[currentWebRadioIndex];
+    if (!st) return;
+    const name = st.name;
+    const list = favorites.webradio;
+    const idx = list.indexOf(name);
+    if (idx === -1) list.push(name);
+    else list.splice(idx, 1);
+    saveFavorites();
+    // rafraîchir la liste WebRadio
+    renderWebRadioList();
+  }
+}
 
     const eqFrequencies = [60, 230, 910, 3600, 14000];
 
@@ -1356,25 +1413,28 @@ function updateFrequencyDisplay(value) {
   }
 
   if (minDiff <= 4) {
-    // On est "locké" sur une vraie station
-    currentFMStation = closest;
+  // On est "locké" sur une vraie station
+  currentFMStation = closest;
 
-    stationName.textContent = closest.name;
-    rdsText.textContent = closest.rds;
-    radioHeroTitle.textContent = closest.name;
-    radioHeroSub.textContent = closest.rds;
-    const logoSrc = stationLogos[closest.name] || stationLogos.Bruitage;
-    radioLogo.src = logoSrc;
-  } else {
-    // Bruitage / hors station
-    currentFMStation = null;
+  const favPrefix = isFavorite("fm", closest.name) ? "★ " : "☆ ";
 
-    stationName.textContent = "Bruitage";
-    rdsText.textContent = "Hors station";
-    radioHeroTitle.textContent = "Aucune station";
-    radioHeroSub.textContent = "Tourne le tuner…";
-    radioLogo.src = stationLogos.Bruitage;
-  }
+  stationName.textContent = favPrefix + closest.name;
+  rdsText.textContent = closest.rds;
+  radioHeroTitle.textContent = closest.name;
+  radioHeroSub.textContent = closest.rds;
+  const logoSrc = stationLogos[closest.name] || stationLogos.Bruitage;
+  radioLogo.src = logoSrc;
+} else {
+  // Bruitage / hors station
+  currentFMStation = null;
+
+  stationName.textContent = "Bruitage";
+  rdsText.textContent = "Hors station";
+  radioHeroTitle.textContent = "Aucune station";
+  radioHeroSub.textContent = "Tourne le tuner…";
+  radioLogo.src = stationLogos.Bruitage;
+}
+
 }
 
     
@@ -1513,7 +1573,7 @@ function updateFrequencyDisplay(value) {
       loadTrack(currentTrackIndex - 1);
       if (mode === "music" && isPlaying) playAudioMusic();
     }
-
+    loadFavorites();
     renderPlaylist();
     loadTrack(currentTrackIndex);
     applyEqPreset("flat");
@@ -1599,12 +1659,15 @@ function updateFrequencyDisplay(value) {
           item.classList.add("active");
         }
         item.dataset.index = index;
+        const favPrefix = isFavorite("webradio", st.name) ? "★ " : "☆ ";
+
         item.innerHTML =
-          '<div class="webradio-name">' +
-          st.name +
-          "</div><div class=\"webradio-desc\">" +
-          st.description +
-          "</div>";
+       '<div class="webradio-name">' +
+        favPrefix + st.name +
+       '</div><div class="webradio-desc">' +
+      st.description +
+       "</div>";
+
         item.addEventListener("click", () => {
           loadWebRadio(index);
           playWebRadio();
@@ -1831,6 +1894,12 @@ btnCenter.addEventListener("click", () => {
     }
     setInterval(updateBattery, 2000);
     updateBattery();
+  document.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "f") {
+    toggleFavoriteCurrentStation();
+  }
+});
+
   </script>
 </body>
 </html>
