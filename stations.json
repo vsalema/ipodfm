@@ -33,7 +33,7 @@
       "name": "R.Alfa",
       "rds": "Hit Music Only",
       "url": "https://n32a-eu.rcs.revma.com/amrbkhqtkm0uv?rj-ttl=5&rj-tok=AAABmqMYXjQAwgI6eJQzoCwBDw",
-      "logo": "img/Radio_Alfa.png"
+      "logo": "/ipodfm/img/Radio_Alfa.png"
     },
     
     {
@@ -125,7 +125,7 @@
       "name": "R.Alfa",
       "description": "Hit Music Only",
       "url": "https://n32a-eu.rcs.revma.com/amrbkhqtkm0uv?rj-ttl=5&rj-tok=AAABmqMYXjQAwgI6eJQzoCwBDw",
-      "logo": "img/Radio_Alfa.png",
+      "logo": "/ipodfm/img/Radio_Alfa.png",
       "tags": ["Hits", "France"]
     },
     
