@@ -1674,47 +1674,85 @@ function pauseFM() {
   console.log("[FM] Pause");
 }
 
-    // -------------------------
-    // BOUTONS WHEEL
-    // -------------------------
-    const btnMenu = document.getElementById("btn-menu");
-    const btnPlay = document.getElementById("btn-play");
-    const btnNext = document.getElementById("btn-next");
-    const btnPrev = document.getElementById("btn-prev");
-    const btnCenter = document.getElementById("btn-center");
+   // -------------------------
+// BOUTONS WHEEL
+// -------------------------
+const btnMenu = document.getElementById("btn-menu");
+const btnPlay = document.getElementById("btn-play");
+const btnNext = document.getElementById("btn-next");
+const btnPrev = document.getElementById("btn-prev");
+const btnCenter = document.getElementById("btn-center");
 
-    btnMenu.addEventListener("click", () => {
-      const nextIndex = (currentTabIndex + 1) % tabOrder.length;
-      showTab(tabOrder[nextIndex]);
-    });
+// FM helpers
+function playFM() {
+  if (!currentFMStation || !currentFMStation.url) {
+    console.warn("[FM] Aucune station lockée ou pas d'URL");
+    return;
+  }
 
-    btnPlay.addEventListener("click", () => {
-      if (mode === "radio") {
-        return; // FM simulée, pas de vrai flux
+  audio.src = currentFMStation.url;
+  audio.play().then(() => {
+    console.log("[FM] Lecture :", currentFMStation.name, currentFMStation.url);
+    isPlaying = true;
+  }).catch((err) => {
+    console.error("[FM] Erreur lecture :", err);
+    isPlaying = false;
+  });
+}
+
+function pauseFM() {
+  audio.pause();
+  isPlaying = false;
+  console.log("[FM] Pause");
+}
+
+// Saute à la station FM suivante/précédente
+function seekFM(direction) {
+  if (!fmStations.length) return;
+
+  const currentVal = parseInt(freqSlider.value, 10);
+  let targetIndex = 0;
+
+  if (direction > 0) {
+    // station suivante (freq plus grande)
+    let found = null;
+    fmStations.forEach((st, i) => {
+      if (st.freq > currentVal && (found === null || st.freq < fmStations[found].freq)) {
+        found = i;
       }
-      if (mode === "music") {
-        if (isPlaying) {
-          pauseAudioMusic();
-        } else {
-          playAudioMusic();
-        }
-      } else if (mode === "webradio") {
-        if (isPlaying) {
-          pauseWebRadio();
-        } else {
-          playWebRadio();
-        }
+    });
+    targetIndex = found !== null ? found : 0; // wrap au début
+  } else {
+    // station précédente (freq plus petite)
+    let found = null;
+    fmStations.forEach((st, i) => {
+      if (st.freq < currentVal && (found === null || st.freq > fmStations[found].freq)) {
+        found = i;
       }
     });
+    targetIndex = found !== null ? found : fmStations.length - 1; // wrap à la fin
+  }
 
-    btnPlay.addEventListener("click", () => {
+  const targetFreq = fmStations[targetIndex].freq;
+  freqSlider.value = targetFreq;
+  updateFrequencyDisplay(targetFreq);
+
+  // si FM est déjà en lecture, on change de flux automatiquement
+  if (mode === "radio" && isPlaying) {
+    playFM();
+  }
+}
+
+btnMenu.addEventListener("click", () => {
+  const nextIndex = (currentTabIndex + 1) % tabOrder.length;
+  showTab(tabOrder[nextIndex]);
+});
+
+// UN SEUL handler Play/Pause pour tous les modes
+btnPlay.addEventListener("click", () => {
   if (mode === "radio") {
-    // Play/Pause FM
-    if (isPlaying) {
-      pauseFM();
-    } else {
-      playFM();
-    }
+    if (isPlaying) pauseFM();
+    else playFM();
     return;
   }
 
@@ -1733,24 +1771,32 @@ function pauseFM() {
   }
 });
 
+// Next
+btnNext.addEventListener("click", () => {
+  if (mode === "radio") {
+    seekFM(+1);
+  } else if (mode === "music") {
+    nextTrack();
+  } else if (mode === "webradio") {
+    loadWebRadio(currentWebRadioIndex + 1);
+    if (isPlaying) playWebRadio();
+  }
+});
 
-    btnPrev.addEventListener("click", () => {
-      if (mode === "radio") {
-        const newVal = Math.max(
-          parseInt(freqSlider.value, 10) - 2,
-          parseInt(freqSlider.min, 10)
-        );
-        freqSlider.value = newVal;
-        updateFrequencyDisplay(newVal);
-      } else if (mode === "music") {
-        prevTrack();
-      } else if (mode === "webradio") {
-        loadWebRadio(currentWebRadioIndex - 1);
-        if (isPlaying) playWebRadio();
-      }
-    });
+// Prev
+btnPrev.addEventListener("click", () => {
+  if (mode === "radio") {
+    seekFM(-1);
+  } else if (mode === "music") {
+    prevTrack();
+  } else if (mode === "webradio") {
+    loadWebRadio(currentWebRadioIndex - 1);
+    if (isPlaying) playWebRadio();
+  }
+});
 
-    btnCenter.addEventListener("click", () => {
+// Bouton central = Play/Pause aussi (pratique)
+btnCenter.addEventListener("click", () => {
   if (mode === "radio") {
     if (isPlaying) pauseFM();
     else playFM();
@@ -1762,6 +1808,7 @@ function pauseFM() {
     else playWebRadio();
   }
 });
+
 
 
     // -------------------------
