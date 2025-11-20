@@ -828,8 +828,7 @@
       </div>
 
       <!-- RADIO FM -->
-      <!-- WEB RADIO -->
-<div class="screen-body" id="screen-webradio" style="display: none;">
+<div class="screen-body" id="screen-radio">
   <div class="screen-hero">
     <!-- Visualizer FM en arrière-plan -->
     <canvas id="fm-hero-viz" class="fm-hero-viz"></canvas>
@@ -849,6 +848,38 @@
       </div>
     </div>
   </div>
+
+  <div class="title-row">
+    <div>
+      <div class="mode-title">Radio FM</div>
+      <div class="subtitle">Tuner numérique • RDS</div>
+    </div>
+    <div class="pill">Stéréo</div>
+  </div>
+
+  <div class="fm-frequency">
+    <div class="freq-display">
+      <div class="freq-main" id="freq-value">
+        99.3<span>MHz</span>
+      </div>
+      <div class="station-name" id="station-name">Nova Mix</div>
+    </div>
+    <input
+      id="freq-slider"
+      type="range"
+      min="875"
+      max="1080"
+      value="993"
+      step="1"
+      class="freq-slider"
+    />
+    <div class="rds-info">
+      <div id="rds-text">100% hits & news</div>
+      <div class="rds-tag">RDS</div>
+    </div>
+  </div>
+</div>
+
  
           <div class="title-row">
           <div>
@@ -1010,27 +1041,37 @@
         </div>
       </div>
 
-      <!-- WEB RADIO -->
-      <div class="screen-body" id="screen-webradio" style="display: none;">
-        <div class="screen-hero">
-  <!-- Visualizer FM en arrière-plan -->
-  <canvas id="fm-hero-viz" class="fm-hero-viz"></canvas>
-
-  <div class="hero-inner">
-    <div class="radio-logo-frame">
-      <img
-        id="radio-logo"
-        src="img/radio-default.png"
-        alt="Logo radio"
-        class="radio-logo"
-      />
-    </div>
-    <div class="hero-text">
-      <div class="hero-title" id="radio-hero-title">Nova Mix</div>
-      <div class="hero-sub" id="radio-hero-sub">100% hits &amp; news</div>
+     <!-- WEB RADIO -->
+<div class="screen-body" id="screen-webradio" style="display: none;">
+  <div class="screen-hero">
+    <div class="hero-inner">
+      <div class="webradio-logo-frame">
+        <img
+          id="webradio-logo"
+          src="img/radio-default.png"
+          alt="Logo web radio"
+          class="webradio-logo"
+        />
+      </div>
+      <div class="hero-text">
+        <div class="hero-title" id="webradio-title">Choisis une station</div>
+        <div class="hero-sub" id="webradio-sub">Web radio internet</div>
+      </div>
     </div>
   </div>
+
+  <div class="title-row">
+    <div>
+      <div class="mode-title">Web Radio</div>
+      <div class="subtitle">Flux HTTP / MP3</div>
+    </div>
+    <div class="pill" id="webradio-status">Stop</div>
+  </div>
+
+  <div class="webradio-list" id="webradio-list"></div>
 </div>
+
+
 
 
         <div class="title-row">
