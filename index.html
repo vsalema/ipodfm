@@ -158,17 +158,33 @@
     }
 
     .screen-hero {
-      width: 100%;
-      height: 70px;
-      border-radius: 14px;
-      background: radial-gradient(circle at 20% 20%, #1f2937, #020617);
-      border: 1px solid rgba(15, 23, 42, 0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 4px;
-      overflow: hidden;
-    }
+  width: 100%;
+  height: 70px;
+  border-radius: 14px;
+  background: radial-gradient(circle at 20% 20%, #1f2937, #020617);
+  border: 1px solid rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  overflow: hidden;
+  position: relative; /* pour le canvas en fond */
+}
+.fm-hero-viz {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.55;         /* un peu transparent pour voir le contenu */
+  pointer-events: none;  /* ne bloque pas les clics */
+}
+
+/* Le contenu (logo + texte) au-dessus du canvas */
+.hero-inner {
+  position: relative;
+  z-index: 1;
+}
 
     body[data-theme="light"] .screen-hero {
       background: radial-gradient(circle at 20% 20%, #e5e7eb, #cbd5f5);
@@ -993,21 +1009,25 @@
       <!-- WEB RADIO -->
       <div class="screen-body" id="screen-webradio" style="display: none;">
         <div class="screen-hero">
-          <div class="hero-inner">
-            <div class="webradio-logo-frame">
-              <img
-                id="webradio-logo"
-                src="img/radio-default.png"
-                alt="Logo web radio"
-                class="webradio-logo"
-              />
-            </div>
-            <div class="hero-text">
-              <div class="hero-title" id="webradio-title">Choisis une station</div>
-              <div class="hero-sub" id="webradio-sub">Web radio internet</div>
-            </div>
-          </div>
-        </div>
+  <!-- Visualizer FM en arrière-plan -->
+  <canvas id="fm-hero-viz" class="fm-hero-viz"></canvas>
+
+  <div class="hero-inner">
+    <div class="radio-logo-frame">
+      <img
+        id="radio-logo"
+        src="img/radio-default.png"
+        alt="Logo radio"
+        class="radio-logo"
+      />
+    </div>
+    <div class="hero-text">
+      <div class="hero-title" id="radio-hero-title">Nova Mix</div>
+      <div class="hero-sub" id="radio-hero-sub">100% hits &amp; news</div>
+    </div>
+  </div>
+</div>
+
 
         <div class="title-row">
           <div>
@@ -1244,6 +1264,61 @@
   const vizCanvas = document.getElementById("viz-canvas");
   const vizCtx = vizCanvas.getContext("2d");
   const vizModeSelect = document.getElementById("viz-mode");
+// Visualizer FM dans le header (screen-hero)
+const fmHeroCanvas = document.getElementById("fm-hero-viz");
+const fmHeroCtx = fmHeroCanvas ? fmHeroCanvas.getContext("2d") : null;
+
+function resizeFmHeroCanvas() {
+  if (!fmHeroCanvas) return;
+  const rect = fmHeroCanvas.getBoundingClientRect();
+  // Adapter la résolution interne du canvas à sa taille CSS
+  fmHeroCanvas.width = rect.width;
+  fmHeroCanvas.height = rect.height;
+}
+
+window.addEventListener("resize", resizeFmHeroCanvas);
+resizeFmHeroCanvas();
+
+function startFmHeroVisualizer() {
+  if (!fmHeroCtx || !fmHeroCanvas) return;
+
+  function loop(timestamp) {
+    requestAnimationFrame(loop);
+
+    const w = fmHeroCanvas.width;
+    const h = fmHeroCanvas.height;
+    if (!w || !h) return;
+
+    // Nettoyage léger
+    fmHeroCtx.clearRect(0, 0, w, h);
+
+    // On ne dessine que si on est en mode Radio FM et qu'une station joue
+    if (mode !== "radio" || !isPlaying || !currentFMStation) {
+      return;
+    }
+
+    const barCount = 24;
+    const barWidth = w / barCount;
+
+    for (let i = 0; i < barCount; i++) {
+      // Animation "vague" basée sur le temps
+      const phase = (timestamp / 300 + i * 0.4) % (Math.PI * 2);
+      const level = (Math.sin(phase) + 1) / 2; // 0 → 1
+      const barHeight = (0.25 + 0.6 * level) * h; // hauteur minimale + variation
+
+      const x = i * barWidth;
+      const y = h - barHeight;
+
+      fmHeroCtx.globalAlpha = 0.7;
+      fmHeroCtx.fillStyle = "#38bdf8";
+      fmHeroCtx.fillRect(x + 1, y, barWidth - 2, barHeight);
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+startFmHeroVisualizer();
 
   const eqSliders = document.querySelectorAll(".eq-slider");
   const eqPresetSelect = document.getElementById("eq-preset");
