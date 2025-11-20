@@ -1197,18 +1197,23 @@ audio.crossOrigin = "anonymous";
     });
 
     function applyEqPreset(name) {
-      const gains = eqPresets[name];
-      if (!gains) return;
-      ensureAudioContext();
-      eqStatus.textContent = "Preset : " + name.charAt(0).toUpperCase() + name.slice(1);
-      eqSliders.forEach((slider, i) => {
-        const g = gains[i] ?? 0;
-        slider.value = g;
-        if (eqFilters[i]) {
-          eqFilters[i].gain.value = g;
-        }
-      });
+  const gains = eqPresets[name];
+  if (!gains) return;
+
+  eqStatus.textContent =
+    "Preset : " + name.charAt(0).toUpperCase() + name.slice(1);
+
+  eqSliders.forEach((slider, i) => {
+    const g = gains[i] ?? 0;
+    slider.value = g;
+
+    // Si l'audioContext existe déjà, on applique aussi aux filtres.
+    if (audioContext && eqFilters[i]) {
+      eqFilters[i].gain.value = g;
     }
+  });
+}
+
 
     eqPresetSelect.addEventListener("change", (e) => {
       const value = e.target.value;
