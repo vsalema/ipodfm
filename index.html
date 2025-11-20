@@ -1652,6 +1652,27 @@ function updateFrequencyDisplay(value) {
 
     renderWebRadioList();
     loadWebRadio(currentWebRadioIndex);
+function playFM() {
+  if (!currentFMStation || !currentFMStation.url) {
+    console.warn("[FM] Aucune station lockée ou pas d'URL");
+    return;
+  }
+
+  audio.src = currentFMStation.url;
+  audio.play().then(() => {
+    console.log("[FM] Lecture :", currentFMStation.name, currentFMStation.url);
+    isPlaying = true;
+  }).catch((err) => {
+    console.error("[FM] Erreur lecture :", err);
+    isPlaying = false;
+  });
+}
+
+function pauseFM() {
+  audio.pause();
+  isPlaying = false;
+  console.log("[FM] Pause");
+}
 
     // -------------------------
     // BOUTONS WHEEL
@@ -1686,21 +1707,32 @@ function updateFrequencyDisplay(value) {
       }
     });
 
-    btnNext.addEventListener("click", () => {
-      if (mode === "radio") {
-        const newVal = Math.min(
-          parseInt(freqSlider.value, 10) + 2,
-          parseInt(freqSlider.max, 10)
-        );
-        freqSlider.value = newVal;
-        updateFrequencyDisplay(newVal);
-      } else if (mode === "music") {
-        nextTrack();
-      } else if (mode === "webradio") {
-        loadWebRadio(currentWebRadioIndex + 1);
-        if (isPlaying) playWebRadio();
-      }
-    });
+    btnPlay.addEventListener("click", () => {
+  if (mode === "radio") {
+    // Play/Pause FM
+    if (isPlaying) {
+      pauseFM();
+    } else {
+      playFM();
+    }
+    return;
+  }
+
+  if (mode === "music") {
+    if (isPlaying) {
+      pauseAudioMusic();
+    } else {
+      playAudioMusic();
+    }
+  } else if (mode === "webradio") {
+    if (isPlaying) {
+      pauseWebRadio();
+    } else {
+      playWebRadio();
+    }
+  }
+});
+
 
     btnPrev.addEventListener("click", () => {
       if (mode === "radio") {
@@ -1719,14 +1751,18 @@ function updateFrequencyDisplay(value) {
     });
 
     btnCenter.addEventListener("click", () => {
-      if (mode === "music") {
-        if (isPlaying) pauseAudioMusic();
-        else playAudioMusic();
-      } else if (mode === "webradio") {
-        if (isPlaying) pauseWebRadio();
-        else playWebRadio();
-      }
-    });
+  if (mode === "radio") {
+    if (isPlaying) pauseFM();
+    else playFM();
+  } else if (mode === "music") {
+    if (isPlaying) pauseAudioMusic();
+    else playAudioMusic();
+  } else if (mode === "webradio") {
+    if (isPlaying) pauseWebRadio();
+    else playWebRadio();
+  }
+});
+
 
     // -------------------------
     // BATTERIE (SIMULÉE)
