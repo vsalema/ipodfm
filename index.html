@@ -828,25 +828,29 @@
       </div>
 
       <!-- RADIO FM -->
-      <div class="screen-body" id="screen-radio">
-        <div class="screen-hero">
-          <div class="hero-inner">
-            <div class="radio-logo-frame">
-              <img
-                id="radio-logo"
-                src="img/radio-default.png"
-                alt="Logo radio"
-                class="radio-logo"
-              />
-            </div>
-            <div class="hero-text">
-              <div class="hero-title" id="radio-hero-title">Nova Mix</div>
-              <div class="hero-sub" id="radio-hero-sub">100% hits &amp; news</div>
-            </div>
-          </div>
-        </div>
+      <!-- WEB RADIO -->
+<div class="screen-body" id="screen-webradio" style="display: none;">
+  <div class="screen-hero">
+    <!-- Visualizer FM en arrière-plan -->
+    <canvas id="fm-hero-viz" class="fm-hero-viz"></canvas>
 
-        <div class="title-row">
+    <div class="hero-inner">
+      <div class="radio-logo-frame">
+        <img
+          id="radio-logo"
+          src="img/radio-default.png"
+          alt="Logo radio"
+          class="radio-logo"
+        />
+      </div>
+      <div class="hero-text">
+        <div class="hero-title" id="radio-hero-title">Nova Mix</div>
+        <div class="hero-sub" id="radio-hero-sub">100% hits &amp; news</div>
+      </div>
+    </div>
+  </div>
+ 
+          <div class="title-row">
           <div>
             <div class="mode-title">Radio FM</div>
             <div class="subtitle">Tuner numérique • RDS</div>
