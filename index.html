@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mini FM Player (Transparent)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent !important;
+    overflow: hidden;
+  }
+
+  .player {
+    width: 100%;
+    max-width: 380px;
+    background: rgba(15, 23, 42, 0.65); /* léger fond translucide */
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(6px);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    margin-inline: auto;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+  }
+
+  .viz {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: #000;
+    overflow: hidden;
+    flex-shrink: 0;
+    z-index: 2;
+  }
+
+  .logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    z-index: 2;
+  }
+
+  .title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .rds {
+    font-size: 0.7rem;
+    color: #bcd;
+  }
+
+  .freq {
+    font-size: 1.2rem;
+    color: #38bdf8;
+    font-weight: 700;
+  }
+
+  /* Slider FM */
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    background: transparent;
+    margin-top: 2px;
+  }
+
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: linear-gradient(90deg, #38bdf8, #f97316);
+    border-radius: 999px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: #fff;
+    border: 2px solid #000;
+    margin-top: -5px;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 4px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 4px 6px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    font-size: 0.75rem;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .btn:hover {
+    background: rgba(255,255,255,0.25);
+  }
+</style>
+
+</head>
+<body>
+
+<div class="player">
+
+  <!-- Visualizer -->
+  <canvas id="viz" class="viz"></canvas>
+
+  <div class="top-row">
+    <div class="logo">
+      <img id="logo" src="img/radio-default.png">
+    </div>
+
+    <div class="info">
+      <div class="title" id="stationName">Station</div>
+      <div class="rds" id="stationRDS">RDS Text</div>
+      <div class="freq" id="stationFreq">99.3 MHz</div>
+    </div>
+  </div>
+
+  <input type="range" id="freq" min="875" max="1080" step="1" value="993">
+
+  <div class="controls">
+    <button class="btn" id="prev">◀◀</button>
+    <button class="btn" id="play">Play</button>
+    <button class="btn" id="next">▶▶</button>
+  </div>
+
+</div>
+
+<audio id="audio" crossorigin="anonymous"></audio>
+
+<script>
+/* -------------------------------
+   VARIABLES & RÉFÉRENCES
+--------------------------------- */
+const freq = document.getElementById("freq");
+const stationName = document.getElementById("stationName");
+const stationRDS = document.getElementById("stationRDS");
+const stationFreq = document.getElementById("stationFreq");
+const logo = document.getElementById("logo");
+const playBtn = document.getElementById("play");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+const audio = document.getElementById("audio");
+const vizCanvas = document.getElementById("viz");
+const ctx = vizCanvas.getContext("2d");
+
+let fmStations = [];
+let currentStation = null;
+let isPlaying = false;
+
+function resizeCanvas(){
+  vizCanvas.width = vizCanvas.offsetWidth;
+  vizCanvas.height = vizCanvas.offsetHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+/* -------------------------------
+   CHARGEMENT stations.json
+--------------------------------- */
+fetch("stations.json")
+.then(r => r.json())
+.then(data => {
+  fmStations = data.fmStations || [];
+  tune(parseInt(freq.value));
+});
+
+/* -------------------------------
+   TUNING / AFFICHAGE STATION
+--------------------------------- */
+function tune(value){
+  const mhz = (value / 10).toFixed(1);
+  stationFreq.textContent = mhz + " MHz";
+
+  // Trouver station proche
+  let best = null;
+  let bestDiff = 999;
+
+  for(const st of fmStations){
+    const diff = Math.abs(st.freq - value);
+    if(diff < bestDiff){
+      bestDiff = diff;
+      best = st;
+    }
+  }
+
+  if(bestDiff <= 4){
+    currentStation = best;
+    stationName.textContent = best.name;
+    stationRDS.textContent = best.rds || "";
+    logo.src = best.logo || "img/radio-default.png";
+  } else {
+    currentStation = null;
+    stationName.textContent = "Bruitage";
+    stationRDS.textContent = "Hors station";
+    logo.src = "img/radio-default.png";
+  }
+}
+
+freq.addEventListener("input", e => tune(parseInt(e.target.value)));
+
+/* -------------------------------
+   LECTURE FM
+--------------------------------- */
+function playFM(){
+  if(!currentStation){ return; }
+
+  ensureCtx();
+
+  audio.src = currentStation.url;
+  audio.play().then(()=>{
+    isPlaying = true;
+    playBtn.textContent = "Pause";
+  }).catch(console.warn);
+}
+
+function pauseFM(){
+  audio.pause();
+  isPlaying = false;
+  playBtn.textContent = "Play";
+}
+
+playBtn.addEventListener("click", ()=>{
+  if(isPlaying) pauseFM();
+  else playFM();
+});
+
+/* NEXT / PREV station FM */
+function nextFM(){
+  const v = parseInt(freq.value);
+  let bigger = fmStations.filter(s=>s.freq > v);
+  if(bigger.length){
+    const next = bigger.reduce((a,b)=>a.freq<b.freq?a:b);
+    freq.value = next.freq;
+    tune(next.freq);
+    if(isPlaying) playFM();
+  }
+}
+
+function prevFM(){
+  const v = parseInt(freq.value);
+  let smaller = fmStations.filter(s=>s.freq < v);
+  if(smaller.length){
+    const prev = smaller.reduce((a,b)=>a.freq>b.freq?a:b);
+    freq.value = prev.freq;
+    tune(prev.freq);
+    if(isPlaying) playFM();
+  }
+}
+
+nextBtn.addEventListener("click", nextFM);
+prevBtn.addEventListener("click", prevFM);
+
+/* -------------------------------
+   VISUALIZER AUDIO
+--------------------------------- */
+let audioCtx = null, analyser = null, buffer = null;
+
+function ensureCtx(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const src = audioCtx.createMediaElementSource(audio);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  buffer = new Uint8Array(analyser.frequencyBinCount);
+  src.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  loopViz();
+}
+
+function loopViz(){
+  requestAnimationFrame(loopViz);
+  if(!analyser || !isPlaying) return;
+
+  analyser.getByteFrequencyData(buffer);
+
+  const w = vizCanvas.width;
+  const h = vizCanvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const bars = 16;
+  const step = Math.floor(buffer.length / bars);
+  const center = w/2;
+  const bw = (w/2)/bars;
+
+  for(let i=0;i<bars;i++){
+    let sum=0;
+    for(let j=0;j<step;j++) sum += buffer[i*step+j];
+    const v = sum/step;
+    const bh = (v/255)*h;
+
+    const y = h-bh;
+
+    ctx.fillStyle="#38bdf8";
+    ctx.globalAlpha=0.8;
+
+    ctx.fillRect(center+i*bw, y, bw-2, bh);
+    ctx.fillRect(center-(i+1)*bw, y, bw-2, bh);
+  }
+}
+</script>
+
+</body>
+</html>
