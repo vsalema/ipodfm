@@ -1263,13 +1263,13 @@
   const vizCtx = vizCanvas.getContext("2d");
   const vizModeSelect = document.getElementById("viz-mode");
 // Visualizer FM dans le header (screen-hero)
+// Visualizer FM / WebRadio dans le header (screen-hero) – réactif au son
 const fmHeroCanvas = document.getElementById("fm-hero-viz");
 const fmHeroCtx = fmHeroCanvas ? fmHeroCanvas.getContext("2d") : null;
 
 function resizeFmHeroCanvas() {
   if (!fmHeroCanvas) return;
   const rect = fmHeroCanvas.getBoundingClientRect();
-  // Adapter la résolution interne du canvas à sa taille CSS
   fmHeroCanvas.width = rect.width;
   fmHeroCanvas.height = rect.height;
 }
@@ -1280,52 +1280,64 @@ resizeFmHeroCanvas();
 function startFmHeroVisualizer() {
   if (!fmHeroCtx || !fmHeroCanvas) return;
 
-  function loop(timestamp) {
+  function loop() {
     requestAnimationFrame(loop);
+
+    // On attend que Web Audio soit initialisé
+    if (!analyser || !vizDataArray) return;
 
     const w = fmHeroCanvas.width;
     const h = fmHeroCanvas.height;
     if (!w || !h) return;
 
-    // Nettoyage léger
-    fmHeroCtx.clearRect(0, 0, w, h);
+    // Fond léger (fade)
+    fmHeroCtx.globalAlpha = 0.9;
+    fmHeroCtx.fillStyle = "#020617";
+    fmHeroCtx.fillRect(0, 0, w, h);
+    fmHeroCtx.globalAlpha = 1;
 
-    // ▶ Le visualizer n’est actif que si ça joue
-    //   et si on est en Radio FM OU Web Radio
+    // Actif seulement si ça joue en Radio FM ou WebRadio
     if (!isPlaying || (mode !== "radio" && mode !== "webradio")) {
       return;
     }
 
-    // 🎨 Style différent selon le mode
-    const isFM = mode === "radio";
-    const barCount = isFM ? 24 : 30;          // un peu plus de barres en WebRadio
-    const speed = isFM ? 300 : 220;           // WebRadio = animation un peu plus rapide
-    const maxHeightFactor = isFM ? 0.6 : 0.8; // WebRadio = barres plus hautes
-    const color = isFM ? "#38bdf8" : "#22c55e"; // FM bleu, WebRadio vert
+    // Récupérer le spectre audio actuel
+    analyser.getByteFrequencyData(vizDataArray);
 
-    const barWidth = w / barCount;
+    const barPairs = 18; // 18 paires → 36 barres (gauche/droite)
+    const step = Math.floor(vizBufferLength / barPairs) || 1;
+    const halfWidth = w / 2;
+    const barWidth = (halfWidth / barPairs) * 0.9;
 
-    for (let i = 0; i < barCount; i++) {
-      // Animation "vague" basée sur le temps
-      const phase = (timestamp / speed + i * 0.45) % (Math.PI * 2);
-      const level = (Math.sin(phase) + 1) / 2; // 0 → 1
-      const barHeight = (0.2 + maxHeightFactor * level) * h;
+    const colorFM = "#38bdf8";
+    const colorWeb = "#22c55e";
+    const color = mode === "radio" ? colorFM : colorWeb;
 
-      const x = i * barWidth;
+    for (let i = 0; i < barPairs; i++) {
+      let sum = 0;
+      for (let j = 0; j < step; j++) {
+        sum += vizDataArray[i * step + j] || 0;
+      }
+      const value = sum / step;   // 0 → 255
+      const norm = value / 255;   // 0 → 1
+      const barHeight = (0.2 + 0.7 * norm) * h;
+
+      const xCenter = halfWidth;
+      const xLeft = xCenter - (i + 1) * barWidth;
+      const xRight = xCenter + i * barWidth;
       const y = h - barHeight;
 
-      fmHeroCtx.globalAlpha = 0.7;
       fmHeroCtx.fillStyle = color;
-      fmHeroCtx.fillRect(x + 1, y, barWidth - 2, barHeight);
+      fmHeroCtx.fillRect(xLeft, y, barWidth - 1, barHeight);
+      fmHeroCtx.fillRect(xRight, y, barWidth - 1, barHeight);
     }
   }
 
   requestAnimationFrame(loop);
 }
 
-
-
 startFmHeroVisualizer();
+
 
   const eqSliders = document.querySelectorAll(".eq-slider");
   const eqPresetSelect = document.getElementById("eq-preset");
@@ -1775,19 +1787,26 @@ startFmHeroVisualizer();
 
 
   function playWebRadio() {
-    if (!audio.src) {
-      loadWebRadio(currentWebRadioIndex);
-    }
-
-    audio.play().then(() => {
-      isPlaying = true;
-      webradioStatusEl.textContent = "Lecture";
-    }).catch((err) => {
-      console.error("Erreur lecture WebRadio :", err);
-      isPlaying = false;
-      webradioStatusEl.textContent = "Erreur flux";
-    });
+  if (!audio.src) {
+    loadWebRadio(currentWebRadioIndex);
   }
+
+  // Init Web Audio pour que l'analyser reçoive aussi le flux WebRadio
+  ensureAudioContext();
+  if (audioContext && audioContext.state === "suspended") {
+    audioContext.resume().catch(() => {});
+  }
+
+  audio.play().then(() => {
+    isPlaying = true;
+    webradioStatusEl.textContent = "Lecture";
+  }).catch((err) => {
+    console.error("Erreur lecture WebRadio :", err);
+    isPlaying = false;
+    webradioStatusEl.textContent = "Erreur flux";
+  });
+}
+
 
   function pauseWebRadio() {
     audio.pause();
