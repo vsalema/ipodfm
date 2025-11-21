@@ -33,7 +33,6 @@
       justify-content: center;
       background: radial-gradient(circle at top, var(--bg), var(--bg-dark));
       color: var(--text);
-      transition: background 0.25s ease-out;
     }
 
     .device {
@@ -175,28 +174,36 @@
     .freq-display {
       display: flex;
       justify-content: space-between;
+      align-items: baseline;
     }
 
     .freq-main {
       font-size: 1.6rem;
       font-weight: 700;
+      letter-spacing: 0.05em;
     }
 
     .freq-main span {
       font-size: 0.8rem;
       color: var(--text-muted);
+      margin-left: 2px;
     }
 
     .station-name {
       font-size: 0.8rem;
       color: var(--primary);
+      font-weight: 500;
     }
 
     input[type="range"] {
-      width: 100%;
-      margin-top: 4px;
-      background: transparent;
       -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+      margin-top: 4px;
+    }
+
+    input[type="range"]:focus {
+      outline: none;
     }
 
     input[type="range"]::-webkit-slider-runnable-track {
@@ -231,7 +238,7 @@
       background: transparent;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: .7rem;
+      font-size: 0.7rem;
     }
 
     .fm-inline-btn:hover {
@@ -244,8 +251,9 @@
       border-radius: 10px;
       border: 1px solid rgba(15, 23, 42, 0.5);
       padding: 4px;
-      max-height: 100px;
+      max-height: 120px;
       overflow-y: auto;
+      scrollbar-width: thin;
     }
 
     .favorite-item {
@@ -254,8 +262,11 @@
       border-radius: 8px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
       cursor: pointer;
+      margin-bottom: 2px;
       color: var(--text-muted);
+      transition: background 0.12s ease-out, color 0.12s ease-out;
     }
 
     .favorite-item:hover {
@@ -266,12 +277,11 @@
     .fav-empty {
       font-size: 0.7rem;
       color: var(--text-muted);
-      padding: 2px 0;
       font-style: italic;
+      padding: 2px 0;
     }
   </style>
 </head>
-
 <body>
   <div class="device">
     <div class="device-header">
@@ -284,16 +294,20 @@
         <div class="tab" data-tab="favorites">Favoris</div>
       </div>
 
-      <!-- RADIO -->
+      <!-- RADIO FM -->
       <div class="screen-body" id="screen-radio">
         <div class="screen-hero">
           <canvas id="fm-hero-viz" class="fm-hero-viz"></canvas>
-
           <div class="hero-inner">
             <div class="radio-logo-frame">
-              <img id="radio-logo" src="img/radio-default.png" class="radio-logo">
+              <img
+                id="radio-logo"
+                src="img/radio-default.png"
+                alt="Logo radio"
+                class="radio-logo"
+              />
             </div>
-            <div>
+            <div class="hero-text">
               <div class="hero-title" id="radio-hero-title">Station</div>
               <div class="hero-sub" id="radio-hero-sub">RDS</div>
             </div>
@@ -302,22 +316,30 @@
 
         <div class="fm-frequency">
           <div class="freq-display">
-            <div class="freq-main" id="freq-value">99.3<span>MHz</span></div>
+            <div class="freq-main" id="freq-value">
+              99.3<span>MHz</span>
+            </div>
             <div class="station-name" id="station-name">Station</div>
           </div>
-
-          <input id="freq-slider" type="range" min="875" max="1080" value="993" />
+          <input
+            id="freq-slider"
+            type="range"
+            min="875"
+            max="1080"
+            value="993"
+            step="1"
+          />
 
           <div class="fm-controls-inline">
-            <button class="fm-inline-btn" id="inline-menu">Menu</button>
             <button class="fm-inline-btn" id="inline-prev">◀◀</button>
+            <button class="fm-inline-btn" id="inline-play">Play</button>
             <button class="fm-inline-btn" id="inline-next">▶▶</button>
           </div>
         </div>
       </div>
 
       <!-- FAVORIS -->
-      <div class="screen-body" id="screen-favorites" style="display:none;">
+      <div class="screen-body" id="screen-favorites" style="display: none;">
         <div class="favorites-list" id="favorites-fm"></div>
       </div>
     </div>
@@ -326,443 +348,378 @@
   </div>
 
 <script>
-    // THÈME
-    const themeToggle = document.getElementById("theme-toggle");
-    const themeIcon = document.getElementById("theme-icon");
-    const themeLabel = document.getElementById("theme-label");
+  // --------- ÉTAT GLOBAL ---------
+  const tabs = document.querySelectorAll(".tab");
+  const screenRadio = document.getElementById("screen-radio");
+  const screenFavorites = document.getElementById("screen-favorites");
 
-    function applyTheme(theme) {
-      document.body.setAttribute("data-theme", theme);
-      if (theme === "light") {
-        themeIcon.textContent = "☀";
-        themeLabel.textContent = "Clair";
-      } else {
-        themeIcon.textContent = "☾";
-        themeLabel.textContent = "Sombre";
-      }
-      try {
-        localStorage.setItem("neo-theme", theme);
-      } catch (e) {}
-    }
+  const audio = document.getElementById("audio-player");
+  audio.crossOrigin = "anonymous";
 
-    (function () {
-      let saved = null;
-      try {
-        saved = localStorage.getItem("neo-theme");
-      } catch (e) {}
-      if (saved === "light" || saved === "dark") {
-        applyTheme(saved);
-      } else {
-        applyTheme("dark");
-      }
-    })();
+  let mode = "radio"; // "radio" | "favorites"
+  let fmStations = [];
+  let currentFMStation = null;
+  let isPlaying = false;
 
-    themeToggle.addEventListener("click", () => {
-      const current = document.body.getAttribute("data-theme") || "dark";
-      applyTheme(current === "dark" ? "light" : "dark");
-    });
+  const DEFAULT_LOGO = "img/radio-default.png";
 
-    // LOGIQUE GÉNÉRALE
-    const tabs = document.querySelectorAll(".tab");
-    const screenRadio = document.getElementById("screen-radio");
-    const screenFavorites = document.getElementById("screen-favorites");
-    const audio = document.getElementById("audio-player");
-    audio.crossOrigin = "anonymous";
+  // --------- FM UI ---------
+  const freqSlider = document.getElementById("freq-slider");
+  const freqValue = document.getElementById("freq-value");
+  const stationName = document.getElementById("station-name");
+  const radioHeroTitle = document.getElementById("radio-hero-title");
+  const radioHeroSub = document.getElementById("radio-hero-sub");
+  const radioLogo = document.getElementById("radio-logo");
 
-    let mode = "radio"; // "radio" | "favorites"
-    const tabOrder = ["radio", "favorites"];
-    let currentTabIndex = 0;
-    let isPlaying = false;
+  const btnPrev = document.getElementById("inline-prev");
+  const btnPlay = document.getElementById("inline-play");
+  const btnNext = document.getElementById("inline-next");
 
-    // FAVORIS FM
-    const favoriteManager = {
-      key: "neo-favorites-fm-only",
-      data: { fm: [] }, // [{freq, name}]
+  // --------- VISUALIZER AUDIO (FM) ---------
+  const fmHeroCanvas = document.getElementById("fm-hero-viz");
+  const fmHeroCtx = fmHeroCanvas.getContext("2d");
 
-      load() {
-        try {
-          const raw = localStorage.getItem(this.key);
-          if (!raw) return;
-          const parsed = JSON.parse(raw);
-          this.data.fm = Array.isArray(parsed.fm) ? parsed.fm : [];
-        } catch (e) {
-          this.data = { fm: [] };
-        }
-      },
+  let audioContext = null;
+  let analyser = null;
+  let vizDataArray = null;
+  let vizBufferLength = 0;
 
-      save() {
-        try {
-          localStorage.setItem(this.key, JSON.stringify(this.data));
-        } catch (e) {}
-      },
+  function resizeFmHeroCanvas() {
+    const rect = fmHeroCanvas.getBoundingClientRect();
+    fmHeroCanvas.width = rect.width;
+    fmHeroCanvas.height = rect.height;
+  }
 
-      isFMFavorite(station) {
-        if (!station) return false;
-        return this.data.fm.some(
-          (f) => f.freq === station.freq && f.name === station.name
-        );
-      },
+  window.addEventListener("resize", resizeFmHeroCanvas);
+  resizeFmHeroCanvas();
 
-      toggleFM(station) {
-        if (!station) return;
-        const idx = this.data.fm.findIndex(
-          (f) => f.freq === station.freq && f.name === station.name
-        );
-        if (idx === -1) {
-          this.data.fm.push({ freq: station.freq, name: station.name });
-        } else {
-          this.data.fm.splice(idx, 1);
-        }
-        this.save();
-      },
+  function ensureAudioContext() {
+    if (audioContext) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
 
-      getFMFavorites() {
-        return this.data.fm;
-      },
-    };
+    audioContext = new AC();
+    const source = audioContext.createMediaElementSource(audio);
 
-    function isFavoriteFM(station) {
-      return favoriteManager.isFMFavorite(station);
-    }
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    vizBufferLength = analyser.frequencyBinCount;
+    vizDataArray = new Uint8Array(vizBufferLength);
 
-    function toggleFavoriteCurrentStation() {
-      if (mode === "radio" && currentFMStation) {
-        favoriteManager.toggleFM(currentFMStation);
-        updateFrequencyDisplay(parseInt(freqSlider.value, 10));
-        renderFavorites();
-      }
-    }
+    source.connect(analyser);
+    analyser.connect(audioContext.destination);
 
-    document.addEventListener("keydown", (e) => {
-      if (e.key.toLowerCase() === "f") {
-        toggleFavoriteCurrentStation();
-      }
-    });
+    startFmVisualizerLoop();
+  }
 
-    // Web Audio pour visualizer
-    let currentFMStation = null;
-    let audioContext = null;
-    let sourceNode = null;
-    let analyser = null;
-    let vizDataArray = null;
-    let vizBufferLength = 0;
+  function startFmVisualizerLoop() {
+    function draw() {
+      requestAnimationFrame(draw);
+      if (!analyser) return;
+      const w = fmHeroCanvas.width;
+      const h = fmHeroCanvas.height;
+      if (!w || !h) return;
 
-    const fmHeroCanvas = document.getElementById("fm-hero-viz");
-    const fmHeroCtx = fmHeroCanvas ? fmHeroCanvas.getContext("2d") : null;
+      fmHeroCtx.clearRect(0, 0, w, h);
 
-    function resizeFmHeroCanvas() {
-      if (!fmHeroCanvas) return;
-      const rect = fmHeroCanvas.getBoundingClientRect();
-      fmHeroCanvas.width = rect.width;
-      fmHeroCanvas.height = rect.height;
-    }
-
-    window.addEventListener("resize", resizeFmHeroCanvas);
-    resizeFmHeroCanvas();
-
-    function ensureAudioContext() {
-      if (audioContext) return;
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      audioContext = new AC();
-      sourceNode = audioContext.createMediaElementSource(audio);
-
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      vizBufferLength = analyser.frequencyBinCount;
-      vizDataArray = new Uint8Array(vizBufferLength);
-
-      sourceNode.connect(analyser);
-      analyser.connect(audioContext.destination);
-
-      startFmHeroVisualizer();
-    }
-
-    function startFmHeroVisualizer() {
-      if (!fmHeroCtx || !fmHeroCanvas) return;
-
-      function loop() {
-        requestAnimationFrame(loop);
-
-        if (!analyser || !vizDataArray) return;
-
-        const w = fmHeroCanvas.width;
-        const h = fmHeroCanvas.height;
-        if (!w || !h) return;
-
-        fmHeroCtx.globalAlpha = 0.9;
-        fmHeroCtx.fillStyle = "#020617";
-        fmHeroCtx.fillRect(0, 0, w, h);
-        fmHeroCtx.globalAlpha = 1;
-
-        if (!isPlaying || mode !== "radio") {
-          return;
-        }
-
-        analyser.getByteFrequencyData(vizDataArray);
-
-        const barPairs = 18; // 18 paires → 36 barres
-        const step = Math.floor(vizBufferLength / barPairs) || 1;
-        const halfWidth = w / 2;
-        const barWidth = (halfWidth / barPairs) * 0.9;
-        const color = "#38bdf8";
-
-        for (let i = 0; i < barPairs; i++) {
-          let sum = 0;
-          for (let j = 0; j < step; j++) {
-            sum += vizDataArray[i * step + j] || 0;
-          }
-          const value = sum / step;
-          const norm = value / 255;
-          const barHeight = (0.2 + 0.7 * norm) * h;
-
-          const xCenter = halfWidth;
-          const xLeft = xCenter - (i + 1) * barWidth;
-          const xRight = xCenter + i * barWidth;
-          const y = h - barHeight;
-
-          fmHeroCtx.fillStyle = color;
-          fmHeroCtx.fillRect(xLeft, y, barWidth - 1, barHeight);
-          fmHeroCtx.fillRect(xRight, y, barWidth - 1, barHeight);
-        }
-      }
-
-      requestAnimationFrame(loop);
-    }
-
-    // Onglets
-    function showTab(tabName) {
-      mode = tabName;
-      currentTabIndex = tabOrder.indexOf(tabName);
-
-      tabs.forEach((t) => {
-        t.classList.toggle("active", t.getAttribute("data-tab") === tabName);
-      });
-
-      screenRadio.style.display = tabName === "radio" ? "flex" : "none";
-      screenFavorites.style.display = tabName === "favorites" ? "flex" : "none";
-
-      if (mode === "favorites") {
-        renderFavorites();
-      }
-    }
-
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        showTab(tab.getAttribute("data-tab"));
-      });
-    });
-
-    // RADIO FM
-    const freqSlider = document.getElementById("freq-slider");
-    const freqValue = document.getElementById("freq-value");
-    const stationName = document.getElementById("station-name");
-    const radioLogo = document.getElementById("radio-logo");
-    const radioHeroTitle = document.getElementById("radio-hero-title");
-    const radioHeroSub = document.getElementById("radio-hero-sub");
-    const DEFAULT_LOGO = "img/radio-default.png";
-
-    let fmStations = [];
-
-    function updateFrequencyDisplay(value) {
-      const mhz = (value / 10).toFixed(1);
-      freqValue.innerHTML = mhz + '<span>MHz</span>';
-
-      if (!fmStations.length) {
-        currentFMStation = null;
-        stationName.textContent = "Bruitage";
-        radioHeroTitle.textContent = "Chargement…";
-        radioHeroSub.textContent = "Stations en cours de chargement";
-        radioLogo.src = DEFAULT_LOGO;
+      if (!isPlaying || mode !== "radio") {
         return;
       }
 
-      let closest = fmStations[0];
-      let minDiff = Math.abs(value - fmStations[0].freq);
-      for (let i = 1; i < fmStations.length; i++) {
-        const diff = Math.abs(value - fmStations[i].freq);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closest = fmStations[i];
-        }
-      }
+      analyser.getByteFrequencyData(vizDataArray);
 
-      if (minDiff <= 4) {
-        currentFMStation = closest;
-        const favPrefix = isFavoriteFM(closest) ? "★ " : "☆ ";
-        stationName.textContent = favPrefix + closest.name;
-        radioHeroTitle.textContent = closest.name;
-        radioHeroSub.textContent = closest.rds || "";
-        radioLogo.src = closest.logo || DEFAULT_LOGO;
-      } else {
-        currentFMStation = null;
-        stationName.textContent = "Bruitage";
-        radioHeroTitle.textContent = "Aucune station";
-        radioHeroSub.textContent = "Tourne le tuner…";
-        radioLogo.src = DEFAULT_LOGO;
+      const center = w / 2;
+      const barCount = 20; // nombre de barres de chaque côté
+      const step = Math.floor(vizBufferLength / barCount);
+      const barWidth = (w / 2) / barCount;
+
+      for (let i = 0; i < barCount; i++) {
+        let sum = 0;
+        for (let j = 0; j < step; j++) {
+          sum += vizDataArray[i * step + j];
+        }
+        const value = sum / step;
+        const barHeight = (value / 255) * h;
+
+        const y = h - barHeight;
+
+        fmHeroCtx.fillStyle = "#38bdf8";
+        fmHeroCtx.globalAlpha = 0.8;
+
+        // Barre côté droit
+        const xRight = center + i * barWidth;
+        fmHeroCtx.fillRect(xRight + 1, y, barWidth - 2, barHeight);
+
+        // Barre côté gauche (symétrique)
+        const xLeft = center - (i + 1) * barWidth;
+        fmHeroCtx.fillRect(xLeft + 1, y, barWidth - 2, barHeight);
       }
     }
 
-    freqSlider.addEventListener("input", (e) => {
-      updateFrequencyDisplay(parseInt(e.target.value, 10));
-    });
+    requestAnimationFrame(draw);
+  }
 
-    // FAVORIS
-    const favoritesFmEl = document.getElementById("favorites-fm");
+  // --------- FAVORIS (FM) ---------
+  const favoritesFmEl = document.getElementById("favorites-fm");
 
-    function getFavoriteFMStations() {
-      const favDefs = favoriteManager.getFMFavorites();
-      return fmStations.filter((st) =>
-        favDefs.some((f) => f.freq === st.freq && f.name === st.name)
+  const favoriteManager = {
+    key: "neo-mini-fm-favorites",
+    data: { fm: [] }, // [{ freq, name }]
+
+    load() {
+      try {
+        const raw = localStorage.getItem(this.key);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        this.data.fm = Array.isArray(parsed.fm) ? parsed.fm : [];
+      } catch (e) {
+        this.data = { fm: [] };
+      }
+    },
+
+    save() {
+      try {
+        localStorage.setItem(this.key, JSON.stringify(this.data));
+      } catch (e) {}
+    },
+
+    isFMFavorite(station) {
+      if (!station) return false;
+      return this.data.fm.some(
+        (f) => f.freq === station.freq && f.name === station.name
       );
-    }
+    },
 
-    function renderFavorites() {
-      favoritesFmEl.innerHTML = "";
-
-      const favFM = getFavoriteFMStations();
-
-      if (favFM.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "fav-empty";
-        empty.textContent =
-          "Aucun favori. Va sur Radio FM et appuie sur F.";
-        favoritesFmEl.appendChild(empty);
+    toggleFM(station) {
+      if (!station) return;
+      const idx = this.data.fm.findIndex(
+        (f) => f.freq === station.freq && f.name === station.name
+      );
+      if (idx === -1) {
+        this.data.fm.push({ freq: station.freq, name: station.name });
       } else {
-        favFM.forEach((st) => {
-          const item = document.createElement("div");
-          item.className = "favorite-item";
-          item.innerHTML =
-            "<span>★ " +
-            st.name +
-            "</span><span>" +
-            (st.freq / 10).toFixed(1) +
-            " MHz</span>";
-          item.addEventListener("click", () => {
-            freqSlider.value = st.freq;
-            updateFrequencyDisplay(st.freq);
-            showTab("radio");
-            playFM();
-          });
-          favoritesFmEl.appendChild(item);
-        });
+        this.data.fm.splice(idx, 1);
       }
+      this.save();
+    },
+
+    getFMFavorites() {
+      return this.data.fm;
+    }
+  };
+
+  function isFavoriteFM(station) {
+    return favoriteManager.isFMFavorite(station);
+  }
+
+  function toggleFavoriteCurrentStation() {
+    if (mode === "radio" && currentFMStation) {
+      favoriteManager.toggleFM(currentFMStation);
+      updateFrequencyDisplay(parseInt(freqSlider.value, 10));
+      renderFavorites();
+    }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() === "f") {
+      toggleFavoriteCurrentStation();
+    }
+  });
+
+  function renderFavorites() {
+    favoritesFmEl.innerHTML = "";
+    const favDefs = favoriteManager.getFMFavorites();
+
+    if (!favDefs.length) {
+      const empty = document.createElement("div");
+      empty.className = "fav-empty";
+      empty.textContent = "Aucun favori. Sur Radio FM, touche F pour ★.";
+      favoritesFmEl.appendChild(empty);
+      return;
     }
 
-    // FM : lecture
-    function playFM() {
-      if (!currentFMStation || !currentFMStation.url) {
-        console.warn("[FM] Aucune station lockée ou pas d'URL");
-        return;
-      }
+    favDefs.forEach((fav) => {
+      const item = document.createElement("div");
+      item.className = "favorite-item";
+      const labelFreq = (fav.freq / 10).toFixed(1) + " MHz";
+      item.innerHTML = `<span>★ ${fav.name}</span><span>${labelFreq}</span>`;
 
-      ensureAudioContext();
-      if (audioContext && audioContext.state === "suspended") {
-        audioContext.resume().catch(() => {});
-      }
-
-      audio.src = currentFMStation.url;
-      audio.play()
-        .then(() => {
-          console.log("[FM] Lecture :", currentFMStation.name, currentFMStation.url);
-          isPlaying = true;
-        })
-        .catch((err) => {
-          console.error("[FM] Erreur lecture :", err);
-          isPlaying = false;
-        });
-    }
-
-    function pauseFM() {
-      audio.pause();
-      isPlaying = false;
-      console.log("[FM] Pause");
-    }
-
-    function seekFM(direction) {
-      if (!fmStations.length) return;
-
-      const currentVal = parseInt(freqSlider.value, 10);
-      let targetIndex = 0;
-
-      if (direction > 0) {
-        let found = null;
-        fmStations.forEach((st, i) => {
-          if (
-            st.freq > currentVal &&
-            (found === null || st.freq < fmStations[found].freq)
-          ) {
-            found = i;
-          }
-        });
-        targetIndex = found !== null ? found : 0;
-      } else {
-        let found = null;
-        fmStations.forEach((st, i) => {
-          if (
-            st.freq < currentVal &&
-            (found === null || st.freq > fmStations[found].freq)
-          ) {
-            found = i;
-          }
-        });
-        targetIndex = found !== null ? found : fmStations.length - 1;
-      }
-
-      const targetFreq = fmStations[targetIndex].freq;
-      freqSlider.value = targetFreq;
-      updateFrequencyDisplay(targetFreq);
-
-      if (mode === "radio" && isPlaying) {
+      item.addEventListener("click", () => {
+        freqSlider.value = fav.freq;
+        updateFrequencyDisplay(fav.freq);
+        showTab("radio");
+        // autoplay à la sélection du favori
         playFM();
+      });
+
+      favoritesFmEl.appendChild(item);
+    });
+  }
+
+  // --------- RADIO FM ---------
+  function updateFrequencyDisplay(value) {
+    const mhz = (value / 10).toFixed(1);
+    freqValue.innerHTML = mhz + "<span>MHz</span>";
+
+    if (!fmStations.length) {
+      currentFMStation = null;
+      stationName.textContent = "Bruitage";
+      radioHeroTitle.textContent = "Chargement…";
+      radioHeroSub.textContent = "stations.json";
+      radioLogo.src = DEFAULT_LOGO;
+      return;
+    }
+
+    let closest = fmStations[0];
+    let minDiff = Math.abs(value - fmStations[0].freq);
+    for (let i = 1; i < fmStations.length; i++) {
+      const diff = Math.abs(value - fmStations[i].freq);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = fmStations[i];
       }
     }
 
-    // Boutons inline (Menu / Prev / Next)
-    const inlineMenu = document.getElementById("inline-menu");
-    const inlinePrev = document.getElementById("inline-prev");
-    const inlineNext = document.getElementById("inline-next");
+    if (minDiff <= 4) {
+      currentFMStation = closest;
+      const favPrefix = isFavoriteFM(closest) ? "★ " : "☆ ";
 
-    inlineMenu.addEventListener("click", () => {
-      const nextIndex = (currentTabIndex + 1) % tabOrder.length;
-      showTab(tabOrder[nextIndex]);
-    });
+      stationName.textContent = favPrefix + closest.name;
+      radioHeroTitle.textContent = closest.name;
+      radioHeroSub.textContent = closest.rds || "";
+      radioLogo.src = closest.logo || DEFAULT_LOGO;
+    } else {
+      currentFMStation = null;
+      stationName.textContent = "Bruitage";
+      radioHeroTitle.textContent = "Aucune station";
+      radioHeroSub.textContent = "Tourne le tuner…";
+      radioLogo.src = DEFAULT_LOGO;
+    }
+  }
 
-    inlinePrev.addEventListener("click", () => {
-      seekFM(-1);
-    });
+  freqSlider.addEventListener("input", (e) => {
+    updateFrequencyDisplay(parseInt(e.target.value, 10));
+  });
 
-    inlineNext.addEventListener("click", () => {
-      seekFM(+1);
-    });
-
-    // CHARGEMENT DYNAMIQUE DES STATIONS FM DEPUIS stations.json
-    async function loadStationData() {
-      try {
-        const response = await fetch("stations.json");
-        if (!response.ok) {
-          throw new Error("HTTP " + response.status);
-        }
-        const data = await response.json();
-
-        fmStations = data.fmStations || [];
-
-        updateFrequencyDisplay(parseInt(freqSlider.value, 10));
-
-        if (mode === "favorites") {
-          renderFavorites();
-        }
-      } catch (err) {
-        console.error("Erreur chargement stations.json :", err);
-        stationName.textContent = "Erreur stations.json";
-      }
+  function playFM() {
+    if (!currentFMStation || !currentFMStation.url) {
+      console.warn("[FM] Aucune station lockée ou pas d'URL");
+      return;
     }
 
-    // INIT
-    favoriteManager.load();
-    showTab("radio");
-    loadStationData();
-  </script>
+    ensureAudioContext();
+    if (audioContext && audioContext.state === "suspended") {
+      audioContext.resume().catch(() => {});
+    }
+
+    audio.src = currentFMStation.url;
+    audio.play().then(() => {
+      isPlaying = true;
+      btnPlay.textContent = "Pause";
+    }).catch((err) => {
+      console.error("[FM] Erreur lecture :", err);
+      isPlaying = false;
+      btnPlay.textContent = "Play";
+    });
+  }
+
+  function pauseFM() {
+    audio.pause();
+    isPlaying = false;
+    btnPlay.textContent = "Play";
+  }
+
+  function seekFM(direction) {
+    if (!fmStations.length) return;
+    const currentVal = parseInt(freqSlider.value, 10);
+    let targetIndex = 0;
+
+    if (direction > 0) {
+      let found = null;
+      fmStations.forEach((st, i) => {
+        if (st.freq > currentVal && (found === null || st.freq < fmStations[found].freq)) {
+          found = i;
+        }
+      });
+      targetIndex = found !== null ? found : 0;
+    } else {
+      let found = null;
+      fmStations.forEach((st, i) => {
+        if (st.freq < currentVal && (found === null || st.freq > fmStations[found].freq)) {
+          found = i;
+        }
+      });
+      targetIndex = found !== null ? found : fmStations.length - 1;
+    }
+
+    const targetFreq = fmStations[targetIndex].freq;
+    freqSlider.value = targetFreq;
+    updateFrequencyDisplay(targetFreq);
+
+    // si on était en lecture, on continue automatiquement sur la nouvelle station
+    if (isPlaying) {
+      playFM();
+    }
+  }
+
+  // --------- ONGLET / MODE ---------
+  function showTab(tabName) {
+    mode = tabName;
+
+    tabs.forEach((t) => {
+      t.classList.toggle("active", t.getAttribute("data-tab") === tabName);
+    });
+
+    screenRadio.style.display = tabName === "radio" ? "flex" : "none";
+    screenFavorites.style.display = tabName === "favorites" ? "flex" : "none";
+
+    if (mode === "favorites") {
+      renderFavorites();
+    }
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.getAttribute("data-tab");
+      showTab(target);
+    });
+  });
+
+  // --------- BOUTONS INLINE ---------
+  btnPlay.addEventListener("click", () => {
+    if (isPlaying) pauseFM();
+    else playFM();
+  });
+
+  btnPrev.addEventListener("click", () => {
+    seekFM(-1);
+  });
+
+  btnNext.addEventListener("click", () => {
+    seekFM(+1);
+  });
+
+  // --------- CHARGEMENT STATIONS ---------
+  async function loadStationData() {
+    try {
+      const res = await fetch("stations.json");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      fmStations = data.fmStations || [];
+      updateFrequencyDisplay(parseInt(freqSlider.value, 10));
+      renderFavorites();
+    } catch (e) {
+      console.error("Erreur chargement stations.json :", e);
+      radioHeroTitle.textContent = "Erreur";
+      radioHeroSub.textContent = "stations.json introuvable";
+    }
+  }
+
+  // --------- INIT ---------
+  favoriteManager.load();
+  showTab("radio");
+  loadStationData();
+</script>
 
 </body>
 </html>
