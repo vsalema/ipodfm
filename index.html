@@ -118,7 +118,7 @@
       border: 1px solid rgba(15, 23, 42, 0.75);
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       margin-bottom: 4px;
       overflow: hidden;
       position: relative;
@@ -138,7 +138,10 @@
       z-index: 1;
       display: flex;
       align-items: center;
+      justify-content: flex-start; /* logo + texte à gauche */
       gap: 10px;
+      width: 100%;
+      padding-inline: 6px;
     }
 
     .radio-logo-frame {
@@ -147,12 +150,21 @@
       border-radius: 14px;
       overflow: hidden;
       background: #020617;
+      flex-shrink: 0;
     }
 
     .radio-logo {
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+      text-align: left;
     }
 
     .hero-title {
@@ -195,17 +207,23 @@
       font-weight: 500;
     }
 
+    .freq-slider {
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    /* Slider stylé (dégradé) – WebKit + Firefox */
     input[type="range"] {
       -webkit-appearance: none;
       width: 100%;
       background: transparent;
-      margin-top: 4px;
     }
 
     input[type="range"]:focus {
       outline: none;
     }
 
+    /* WebKit */
     input[type="range"]::-webkit-slider-runnable-track {
       height: 4px;
       background: linear-gradient(90deg, var(--primary), var(--accent));
@@ -220,6 +238,23 @@
       background: #f9fafb;
       border: 2px solid #0f172a;
       margin-top: -5px;
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
+    }
+
+    /* Firefox */
+    input[type="range"]::-moz-range-track {
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 999px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #f9fafb;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
     }
 
     .fm-controls-inline {
@@ -281,38 +316,6 @@
       padding: 2px 0;
     }
   </style>
-<style>
-  input[type="range"] {
-  -webkit-appearance: none;
-  width: 100%;
-  background: transparent;
-}
-.freq-slider {
-  width: 100%;
-  margin-top: 4px;
-}
-* {
-  box-sizing: border-box;
-  margin: 0;
-    margin-top: 0px;
-  padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-body {
-  color: var(--text);
-}
-:root {
-  --bg: #0f172a;
-  --bg-dark: #020617;
-  --primary: #38bdf8;
-  --secondary: #22c55e;
-  --accent: #f97316;
-  --text: #e5e7eb;
-  --text-muted: #9ca3af;
-  --card: #111827;
-  --border: #1f2937;
-  --radius-xl: 18px;
-</style>
 </head>
 <body>
   <div class="device">
@@ -360,6 +363,7 @@ body {
             max="1080"
             value="993"
             step="1"
+            class="freq-slider"
           />
 
           <div class="fm-controls-inline">
@@ -688,7 +692,6 @@ body {
     freqSlider.value = targetFreq;
     updateFrequencyDisplay(targetFreq);
 
-    // si on était en lecture, on continue automatiquement sur la nouvelle station
     if (isPlaying) {
       playFM();
     }
