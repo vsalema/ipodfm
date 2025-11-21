@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mini Radio FM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://vsalema.github.io/tvpt4/css/fileLabel.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-dark: #020617;
+      --primary: #38bdf8;
+      --secondary: #22c55e;
+      --accent: #f97316;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --card: #111827;
+      --border: #1f2937;
+      --radius-xl: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #0f172a00, #02061700);
+      color: var(--text);
+    }
+
+    .device {
+      width: 320px;
+      max-width: 92vw;
+      background: linear-gradient(145deg, var(--card), var(--bg-dark));
+      border-radius: 26px;
+      padding: 16px 16px 16px;
+      border: 1px solid var(--border);
+      box-shadow:
+        0 20px 45px rgba(0, 0, 0, 0.35),
+        inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .device-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      padding-bottom: 2px;
+    }
+
+    .logo {
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--primary);
+    }
+
+    .screen {
+      background: radial-gradient(circle at top left, var(--card), var(--bg-dark));
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      box-shadow:
+        inset 0 0 0 1px rgba(15, 23, 42, 0.35),
+        0 12px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .tabs {
+      display: flex;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 3px;
+      margin-bottom: 8px;
+      gap: 4px;
+      font-size: 0.7rem;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 4px 0;
+      border-radius: 999px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s ease-out;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--primary), #6366f1);
+      color: #0b1120;
+      font-weight: 600;
+    }
+
+    .screen-body {
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .screen-hero {
+      width: 100%;
+      height: 70px;
+      border-radius: 14px;
+      background: radial-gradient(circle at 20% 20%, #1f2937, #020617);
+      border: 1px solid rgba(15, 23, 42, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .fm-hero-viz {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start; /* logo + texte à gauche */
+      gap: 10px;
+      width: 100%;
+      padding-inline: 6px;
+    }
+
+    .radio-logo-frame {
+      width: 68px;
+      height: 68px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #020617;
+      flex-shrink: 0;
+    }
+
+    .radio-logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      background: transparent; /* ou #000 selon ton cadre */
+
+    
+    
+    }
+
+    .hero-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+      text-align: left;
+    }
+
+    .hero-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .hero-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .fm-frequency {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .freq-display {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .freq-main {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .freq-main span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    .station-name {
+      font-size: 0.8rem;
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .freq-slider {
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    /* Slider stylé (dégradé) – WebKit + Firefox */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+
+    input[type="range"]:focus {
+      outline: none;
+    }
+
+    /* WebKit */
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 999px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #f9fafb;
+      border: 2px solid #0f172a;
+      margin-top: -5px;
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
+    }
+
+    /* Firefox */
+    input[type="range"]::-moz-range-track {
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 999px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: #f9fafb;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
+    }
+
+    .fm-controls-inline {
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 0.7rem;
+    }
+
+    .fm-inline-btn {
+      flex: 1;
+      padding: 4px 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.7rem;
+    }
+
+    .fm-inline-btn:hover {
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--primary);
+    }
+
+    /* FAVORIS */
+    .favorites-list {
+      border-radius: 10px;
+      border: 1px solid rgba(15, 23, 42, 0.5);
+      padding: 4px;
+      max-height: 120px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .favorite-item {
+      font-size: 0.75rem;
+      padding: 3px 6px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      margin-bottom: 2px;
+      color: var(--text-muted);
+      transition: background 0.12s ease-out, color 0.12s ease-out;
+    }
+
+    .favorite-item:hover {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--primary);
+    }
+
+    .fav-empty {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="device" style="margin-top: -260px;">
+    <div class="device-header">
+      <div class="logo">neoFM</div>
+    </div>
+
+    <div class="screen">
+      <div class="tabs">
+        <div class="tab active" data-tab="radio">Radio FM</div>
+        <div class="tab" data-tab="favorites">Favoris</div>
+      </div>
+
+      <!-- RADIO FM -->
+      <div class="screen-body" id="screen-radio">
+        <div class="screen-hero">
+          <canvas id="fm-hero-viz" class="fm-hero-viz"></canvas>
+          <div class="hero-inner">
+            <div class="radio-logo-frame">
+              <img
+                id="radio-logo"
+                src="img/radio-default.png"
+                alt="Logo radio"
+                class="radio-logo"
+              />
+            </div>
+            <div class="hero-text">
+              <div class="hero-title" id="radio-hero-title">Station</div>
+              <div class="hero-sub" id="radio-hero-sub">RDS</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fm-frequency">
+          <div class="freq-display">
+            <div class="freq-main" id="freq-value">
+              99.3<span>MHz</span>
+            </div>
+            <div class="station-name" id="station-name">Station</div>
+          </div>
+          <input
+            id="freq-slider"
+            type="range"
+            min="875"
+            max="1080"
+            value="993"
+            step="1"
+            class="freq-slider"
+          />
+
+          <div class="fm-controls-inline">
+            <button class="fm-inline-btn" id="inline-prev">◀◀</button>
+            <button class="fm-inline-btn" id="inline-play">Play</button>
+            <button class="fm-inline-btn" id="inline-next">▶▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAVORIS -->
+      <div class="screen-body" id="screen-favorites" style="display: none;">
+        <div class="favorites-list" id="favorites-fm"></div>
+      </div>
+    </div>
+
+    <audio id="audio-player"></audio>
+  </div>
+
+<script>
+  // --------- ÉTAT GLOBAL ---------
+  const tabs = document.querySelectorAll(".tab");
+  const screenRadio = document.getElementById("screen-radio");
+  const screenFavorites = document.getElementById("screen-favorites");
+
+  const audio = document.getElementById("audio-player");
+  audio.crossOrigin = "anonymous";
+// --- Config "fast start" pour HLS ---
+const HLS_FAST_CONFIG = {
+  // Ne pas bufferiser trop loin : démarrage plus rapide
+  maxBufferLength: 8,        // secondes
+  maxMaxBufferLength: 16,
+  maxBufferSize: 10 * 1000 * 1000, // 10 MB
+
+  // Latence live un peu réduite
+  liveSyncDuration: 3,
+  liveMaxLatencyDuration: 10,
+
+  // Démarrer sur le premier niveau (bitrate le plus bas souvent)
+  startLevel: 0,
+  // On ne garde pas trop de buffer derrière
+  backBufferLength: 0
+};
+
+  // --- LECTURE GÉNÉRIQUE (MP3 / AAC / M3U8) ---
+  let hlsInstance = null;
+
+  let hlsInstance = null;
+
+function playStream(url) {
+  if (!url) return;
+
+  const isHls = url.trim().toLowerCase().includes(".m3u8");
+
+  // On réveille l'AudioContext pour que le visualizer soit prêt
+  ensureAudioContext();
+  if (audioContext && audioContext.state === "suspended") {
+    audioContext.resume().catch(() => {});
+  }
+
+  // Cas 1 : HLS natif (Safari, iOS...)
+  if (isHls && audio.canPlayType("application/vnd.apple.mpegurl")) {
+    if (hlsInstance) {
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
+
+    audio.src = url;
+    audio.preload = "auto";   // hint pour commencer à bufferiser vite
+    audio.load();             // on force le chargement
+    audio.play().then(() => {
+      isPlaying = true;
+      if (typeof btnPlay !== "undefined") btnPlay.textContent = "Pause";
+    }).catch((err) => {
+      console.error("[HLS natif] Erreur lecture :", err);
+      isPlaying = false;
+      if (typeof btnPlay !== "undefined") btnPlay.textContent = "Play";
+    });
+
+    return;
+  }
+
+  // Cas 2 : HLS via hls.js
+  if (isHls && window.Hls && Hls.isSupported()) {
+    if (hlsInstance) {
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
+
+    hlsInstance = new Hls(HLS_FAST_CONFIG);
+    hlsInstance.loadSource(url);
+    hlsInstance.attachMedia(audio);
+
+    // Dès que le manifeste est parsé, on démarre
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+      audio.play().then(() => {
+        isPlaying = true;
+        if (typeof btnPlay !== "undefined") btnPlay.textContent = "Pause";
+      }).catch((err) => {
+        console.error("[Hls.js] Erreur lecture :", err);
+        isPlaying = false;
+        if (typeof btnPlay !== "undefined") btnPlay.textContent = "Play";
+      });
+    });
+
+    hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+      console.error("[Hls.js] Error", data);
+    });
+
+    return;
+  }
+
+  // Cas 3 : flux classique (MP3, AAC...)
+  if (hlsInstance) {
+    hlsInstance.destroy();
+    hlsInstance = null;
+  }
+
+  audio.src = url;
+  audio.preload = "auto";
+  audio.load();
+  audio.play().then(() => {
+    isPlaying = true;
+    if (typeof btnPlay !== "undefined") btnPlay.textContent = "Pause";
+  }).catch((err) => {
+    console.error("[AUDIO direct] Erreur lecture :", err);
+    isPlaying = false;
+    if (typeof btnPlay !== "undefined") btnPlay.textContent = "Play";
+  });
+}
+
+
+  let mode = "radio"; // "radio" | "favorites"
+  let fmStations = [];
+  let currentFMStation = null;
+  let isPlaying = false;
+
+  const DEFAULT_LOGO = "img/radio-default.png";
+
+  // --------- FM UI ---------
+  const freqSlider = document.getElementById("freq-slider");
+  const freqValue = document.getElementById("freq-value");
+  const stationName = document.getElementById("station-name");
+  const radioHeroTitle = document.getElementById("radio-hero-title");
+  const radioHeroSub = document.getElementById("radio-hero-sub");
+  const radioLogo = document.getElementById("radio-logo");
+
+  const btnPrev = document.getElementById("inline-prev");
+  const btnPlay = document.getElementById("inline-play");
+  const btnNext = document.getElementById("inline-next");
+
+  // --------- VISUALIZER AUDIO (FM) ---------
+  const fmHeroCanvas = document.getElementById("fm-hero-viz");
+  const fmHeroCtx = fmHeroCanvas.getContext("2d");
+
+  let audioContext = null;
+  let analyser = null;
+  let vizDataArray = null;
+  let vizBufferLength = 0;
+
+  function resizeFmHeroCanvas() {
+    const rect = fmHeroCanvas.getBoundingClientRect();
+    fmHeroCanvas.width = rect.width;
+    fmHeroCanvas.height = rect.height;
+  }
+
+  window.addEventListener("resize", resizeFmHeroCanvas);
+  resizeFmHeroCanvas();
+
+  function ensureAudioContext() {
+    if (audioContext) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+
+    audioContext = new AC();
+    const source = audioContext.createMediaElementSource(audio);
+
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    vizBufferLength = analyser.frequencyBinCount;
+    vizDataArray = new Uint8Array(vizBufferLength);
+
+    source.connect(analyser);
+    analyser.connect(audioContext.destination);
+
+    startFmVisualizerLoop();
+  }
+
+  function startFmVisualizerLoop() {
+    function draw() {
+      requestAnimationFrame(draw);
+      if (!analyser) return;
+      const w = fmHeroCanvas.width;
+      const h = fmHeroCanvas.height;
+      if (!w || !h) return;
+
+      fmHeroCtx.clearRect(0, 0, w, h);
+
+      if (!isPlaying || mode !== "radio") {
+        return;
+      }
+
+      analyser.getByteFrequencyData(vizDataArray);
+
+      const center = w / 2;
+      const barCount = 20; // barres de chaque côté
+      const step = Math.floor(vizBufferLength / barCount);
+      const barWidth = (w / 2) / barCount;
+
+      for (let i = 0; i < barCount; i++) {
+        let sum = 0;
+        for (let j = 0; j < step; j++) {
+          sum += vizDataArray[i * step + j];
+        }
+        const value = sum / step;
+        const barHeight = (value / 255) * h;
+
+        const y = h - barHeight;
+
+        fmHeroCtx.fillStyle = "#38bdf8";
+        fmHeroCtx.globalAlpha = 0.8;
+
+        // Barre côté droit
+        const xRight = center + i * barWidth;
+        fmHeroCtx.fillRect(xRight + 1, y, barWidth - 2, barHeight);
+
+        // Barre côté gauche (symétrique)
+        const xLeft = center - (i + 1) * barWidth;
+        fmHeroCtx.fillRect(xLeft + 1, y, barWidth - 2, barHeight);
+      }
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  // --------- FAVORIS (FM) ---------
+  const favoritesFmEl = document.getElementById("favorites-fm");
+
+  const favoriteManager = {
+    key: "neo-mini-fm-favorites",
+    data: { fm: [] }, // [{ freq, name }]
+
+    load() {
+      try {
+        const raw = localStorage.getItem(this.key);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        this.data.fm = Array.isArray(parsed.fm) ? parsed.fm : [];
+      } catch (e) {
+        this.data = { fm: [] };
+      }
+    },
+
+    save() {
+      try {
+        localStorage.setItem(this.key, JSON.stringify(this.data));
+      } catch (e) {}
+    },
+
+    isFMFavorite(station) {
+      if (!station) return false;
+      return this.data.fm.some(
+        (f) => f.freq === station.freq && f.name === station.name
+      );
+    },
+
+    toggleFM(station) {
+      if (!station) return;
+      const idx = this.data.fm.findIndex(
+        (f) => f.freq === station.freq && f.name === station.name
+      );
+      if (idx === -1) {
+        this.data.fm.push({ freq: station.freq, name: station.name });
+      } else {
+        this.data.fm.splice(idx, 1);
+      }
+      this.save();
+    },
+
+    getFMFavorites() {
+      return this.data.fm;
+    }
+  };
+
+  function isFavoriteFM(station) {
+    return favoriteManager.isFMFavorite(station);
+  }
+
+  function toggleFavoriteCurrentStation() {
+    if (mode === "radio" && currentFMStation) {
+      favoriteManager.toggleFM(currentFMStation);
+      updateFrequencyDisplay(parseInt(freqSlider.value, 10));
+      renderFavorites();
+    }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() === "f") {
+      toggleFavoriteCurrentStation();
+    }
+  });
+
+  function renderFavorites() {
+    favoritesFmEl.innerHTML = "";
+    const favDefs = favoriteManager.getFMFavorites();
+
+    if (!favDefs.length) {
+      const empty = document.createElement("div");
+      empty.className = "fav-empty";
+      empty.textContent = "Aucun favori. Sur Radio FM, touche F pour ★.";
+      favoritesFmEl.appendChild(empty);
+      return;
+    }
+
+    favDefs.forEach((fav) => {
+      const item = document.createElement("div");
+      item.className = "favorite-item";
+      const labelFreq = (fav.freq / 10).toFixed(1) + " MHz";
+      item.innerHTML = `<span>★ ${fav.name}</span><span>${labelFreq}</span>`;
+
+      item.addEventListener("click", () => {
+        freqSlider.value = fav.freq;
+        updateFrequencyDisplay(fav.freq);
+        showTab("radio");
+        // autoplay à la sélection du favori
+        playFM();
+      });
+
+      favoritesFmEl.appendChild(item);
+    });
+  }
+
+  // --------- RADIO FM ---------
+  function updateFrequencyDisplay(value) {
+    const mhz = (value / 10).toFixed(1);
+    freqValue.innerHTML = mhz + "<span>MHz</span>";
+
+    if (!fmStations.length) {
+      currentFMStation = null;
+      stationName.textContent = "Bruitage";
+      radioHeroTitle.textContent = "Chargement…";
+      radioHeroSub.textContent = "stations.json";
+      radioLogo.src = DEFAULT_LOGO;
+      return;
+    }
+
+    let closest = fmStations[0];
+    let minDiff = Math.abs(value - fmStations[0].freq);
+    for (let i = 1; i < fmStations.length; i++) {
+      const diff = Math.abs(value - fmStations[i].freq);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = fmStations[i];
+      }
+    }
+
+    if (minDiff <= 4) {
+      currentFMStation = closest;
+      const favPrefix = isFavoriteFM(closest) ? "★ " : "☆ ";
+
+      stationName.textContent = favPrefix + closest.name;
+      radioHeroTitle.textContent = closest.name;
+      radioHeroSub.textContent = closest.rds || "";
+      radioLogo.src = closest.logo || DEFAULT_LOGO;
+    } else {
+      currentFMStation = null;
+      stationName.textContent = "Bruitage";
+      radioHeroTitle.textContent = "Aucune station";
+      radioHeroSub.textContent = "Tourne le tuner…";
+      radioLogo.src = DEFAULT_LOGO;
+    }
+  }
+
+  freqSlider.addEventListener("input", (e) => {
+    updateFrequencyDisplay(parseInt(e.target.value, 10));
+  });
+
+  function playFM() {
+    if (!currentFMStation || !currentFMStation.url) {
+      console.warn("[FM] Aucune station lockée ou pas d'URL");
+      return;
+    }
+
+    // Pour le visualizer audio
+    ensureAudioContext();
+    if (audioContext && audioContext.state === "suspended") {
+      audioContext.resume().catch(() => {});
+    }
+
+    console.log("[FM] Lecture :", currentFMStation.name, currentFMStation.url);
+    // Passe par le moteur générique (gère aussi .m3u8)
+    playStream(currentFMStation.url);
+  }
+
+  function pauseFM() {
+    audio.pause();
+    isPlaying = false;
+    btnPlay.textContent = "Play";
+  }
+
+  function seekFM(direction) {
+    if (!fmStations.length) return;
+    const currentVal = parseInt(freqSlider.value, 10);
+    let targetIndex = 0;
+
+    if (direction > 0) {
+      let found = null;
+      fmStations.forEach((st, i) => {
+        if (st.freq > currentVal && (found === null || st.freq < fmStations[found].freq)) {
+          found = i;
+        }
+      });
+      targetIndex = found !== null ? found : 0;
+    } else {
+      let found = null;
+      fmStations.forEach((st, i) => {
+        if (st.freq < currentVal && (found === null || st.freq > fmStations[found].freq)) {
+          found = i;
+        }
+      });
+      targetIndex = found !== null ? found : fmStations.length - 1;
+    }
+
+    const targetFreq = fmStations[targetIndex].freq;
+    freqSlider.value = targetFreq;
+    updateFrequencyDisplay(targetFreq);
+
+    if (isPlaying) {
+      playFM();
+    }
+  }
+
+  // --------- ONGLET / MODE ---------
+  function showTab(tabName) {
+    mode = tabName;
+
+    tabs.forEach((t) => {
+      t.classList.toggle("active", t.getAttribute("data-tab") === tabName);
+    });
+
+    screenRadio.style.display = tabName === "radio" ? "flex" : "none";
+    screenFavorites.style.display = tabName === "favorites" ? "flex" : "none";
+
+    if (mode === "favorites") {
+      renderFavorites();
+    }
+  }
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.getAttribute("data-tab");
+      showTab(target);
+    });
+  });
+
+  // --------- BOUTONS INLINE ---------
+  btnPlay.addEventListener("click", () => {
+    if (isPlaying) pauseFM();
+    else playFM();
+  });
+
+  btnPrev.addEventListener("click", () => {
+    seekFM(-1);
+  });
+
+  btnNext.addEventListener("click", () => {
+    seekFM(+1);
+  });
+
+  // --------- CHARGEMENT STATIONS ---------
+  async function loadStationData() {
+    try {
+      const res = await fetch("stations.json");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      fmStations = data.fmStations || [];
+      updateFrequencyDisplay(parseInt(freqSlider.value, 10));
+      renderFavorites();
+    } catch (e) {
+      console.error("Erreur chargement stations.json :", e);
+      radioHeroTitle.textContent = "Erreur";
+      radioHeroSub.textContent = "stations.json introuvable";
+    }
+  }
+
+  // --------- INIT ---------
+  favoriteManager.load();
+  showTab("radio");
+  loadStationData();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.15/dist/hls.min.js"></script>
+</body>
+</html>
