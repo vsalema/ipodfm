@@ -1287,59 +1287,42 @@ function startFmHeroVisualizer() {
     const h = fmHeroCanvas.height;
     if (!w || !h) return;
 
+    // Nettoyage léger
     fmHeroCtx.clearRect(0, 0, w, h);
 
-    // On ne dessine que si on est en mode Radio FM et qu'une station joue
-    if (mode !== "radio" || !isPlaying || !currentFMStation) {
+    // ▶ Le visualizer n’est actif que si ça joue
+    //   et si on est en Radio FM OU Web Radio
+    if (!isPlaying || (mode !== "radio" && mode !== "webradio")) {
       return;
     }
 
-    const barCount = 24;
+    // 🎨 Style différent selon le mode
+    const isFM = mode === "radio";
+    const barCount = isFM ? 24 : 30;          // un peu plus de barres en WebRadio
+    const speed = isFM ? 300 : 220;           // WebRadio = animation un peu plus rapide
+    const maxHeightFactor = isFM ? 0.6 : 0.8; // WebRadio = barres plus hautes
+    const color = isFM ? "#38bdf8" : "#22c55e"; // FM bleu, WebRadio vert
+
     const barWidth = w / barCount;
 
-    // Si on a un AnalyserNode (Web Audio), on lit vraiment le son
-    if (analyser) {
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      analyser.getByteFrequencyData(dataArray);
+    for (let i = 0; i < barCount; i++) {
+      // Animation "vague" basée sur le temps
+      const phase = (timestamp / speed + i * 0.45) % (Math.PI * 2);
+      const level = (Math.sin(phase) + 1) / 2; // 0 → 1
+      const barHeight = (0.2 + maxHeightFactor * level) * h;
 
-      const step = Math.max(1, Math.floor(bufferLength / barCount));
+      const x = i * barWidth;
+      const y = h - barHeight;
 
-      for (let i = 0; i < barCount; i++) {
-        let sum = 0;
-        for (let j = 0; j < step; j++) {
-          const idx = i * step + j;
-          if (idx < bufferLength) sum += dataArray[idx];
-        }
-        const value = sum / step; // 0 → 255
-        const barHeight = (value / 255) * h;
-
-        const x = i * barWidth;
-        const y = h - barHeight;
-
-        fmHeroCtx.globalAlpha = 0.7;
-        fmHeroCtx.fillStyle = "#38bdf8";
-        fmHeroCtx.fillRect(x + 1, y, barWidth - 2, barHeight);
-      }
-    } else {
-      // Fallback décoratif si pas d'analyser (aucun Web Audio dispo)
-      for (let i = 0; i < barCount; i++) {
-        const phase = (timestamp / 300 + i * 0.4) % (Math.PI * 2);
-        const level = (Math.sin(phase) + 1) / 2;
-        const barHeight = (0.25 + 0.6 * level) * h;
-
-        const x = i * barWidth;
-        const y = h - barHeight;
-
-        fmHeroCtx.globalAlpha = 0.7;
-        fmHeroCtx.fillStyle = "#38bdf8";
-        fmHeroCtx.fillRect(x + 1, y, barWidth - 2, barHeight);
-      }
+      fmHeroCtx.globalAlpha = 0.7;
+      fmHeroCtx.fillStyle = color;
+      fmHeroCtx.fillRect(x + 1, y, barWidth - 2, barHeight);
     }
   }
 
   requestAnimationFrame(loop);
 }
+
 
 
 startFmHeroVisualizer();
