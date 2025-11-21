@@ -18,7 +18,7 @@
       "freq": 943,
       "name": "Fun Radio",
       "rds": "Le son dancefloor",
-      "url": "http://icecast.funradio.fr/fun-1-44-128",
+      "url": "https://hls.funradio.fr/ZjkyY2EwMzhiZmFjZWFkMTUxZTYyNzFmYTY0MDcwYzIuMTc2Mzc5NDgyNg~~/radio/webOU6MESMYnoHzvZJe8ie5Mi/national/fun-radio/long/index.m3u8",
       "logo": "img/webradio-funradio.png"
     },
     {
@@ -47,28 +47,28 @@
       "freq": 1010,
       "name": "RFM",
       "rds": "Le meilleur de la musique",
-      "url": "http://stream.rfm.fr/rfm.mp3",
+      "url": "https://rfm.lmn.fm/rfm-59300/playlist.m3u8",
       "logo": "img/webradio-rfm.png"
     },
     {
       "freq": 1025,
       "name": "Europe 1",
       "rds": "Info & talk",
-      "url": "http://ais-live.cloud-services.paris:8000/europe1.mp3",
+      "url": "https://europe1.lmn.fm/europe1.mp3?aw_0_1st.playerid=lgrdrnwsRadiofr",
       "logo": "img/webradio-europe1.png"
     },
     {
       "freq": 1035,
       "name": "France Musique",
       "rds": "Classique & jazz",
-      "url": "http://direct.francemusique.fr/live/francemusique-midfi.mp3",
+      "url": "https://icecast.radiofrance.fr/francemusique-hifi.aac",
       "logo": "img/webradio-francemusique.png"
     },
     {
       "freq": 1043,
       "name": "RMC",
       "rds": "Info & sport",
-      "url": "https://audio.bfmtv.com/rmcradio_128.mp3?aw_0_1st.playerId=RMC_audio_web&aw_0_1st.aggregator=RMC_audio_web",
+      "url": "https://hls-rmc.nextradiotv.com/no_ssai/master.m3u8",
       "logo": "img/webradio-rmc.png"
     },
     {
