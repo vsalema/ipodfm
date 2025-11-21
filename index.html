@@ -1286,7 +1286,6 @@ function startFmHeroVisualizer() {
     const h = fmHeroCanvas.height;
     if (!w || !h) return;
 
-    // Nettoyage léger
     fmHeroCtx.clearRect(0, 0, w, h);
 
     // On ne dessine que si on est en mode Radio FM et qu'une station joue
@@ -1297,23 +1296,50 @@ function startFmHeroVisualizer() {
     const barCount = 24;
     const barWidth = w / barCount;
 
-    for (let i = 0; i < barCount; i++) {
-      // Animation "vague" basée sur le temps
-      const phase = (timestamp / 300 + i * 0.4) % (Math.PI * 2);
-      const level = (Math.sin(phase) + 1) / 2; // 0 → 1
-      const barHeight = (0.25 + 0.6 * level) * h; // hauteur minimale + variation
+    // Si on a un AnalyserNode (Web Audio), on lit vraiment le son
+    if (analyser) {
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(dataArray);
 
-      const x = i * barWidth;
-      const y = h - barHeight;
+      const step = Math.max(1, Math.floor(bufferLength / barCount));
 
-      fmHeroCtx.globalAlpha = 0.7;
-      fmHeroCtx.fillStyle = "#38bdf8";
-      fmHeroCtx.fillRect(x + 1, y, barWidth - 2, barHeight);
+      for (let i = 0; i < barCount; i++) {
+        let sum = 0;
+        for (let j = 0; j < step; j++) {
+          const idx = i * step + j;
+          if (idx < bufferLength) sum += dataArray[idx];
+        }
+        const value = sum / step; // 0 → 255
+        const barHeight = (value / 255) * h;
+
+        const x = i * barWidth;
+        const y = h - barHeight;
+
+        fmHeroCtx.globalAlpha = 0.7;
+        fmHeroCtx.fillStyle = "#38bdf8";
+        fmHeroCtx.fillRect(x + 1, y, barWidth - 2, barHeight);
+      }
+    } else {
+      // Fallback décoratif si pas d'analyser (aucun Web Audio dispo)
+      for (let i = 0; i < barCount; i++) {
+        const phase = (timestamp / 300 + i * 0.4) % (Math.PI * 2);
+        const level = (Math.sin(phase) + 1) / 2;
+        const barHeight = (0.25 + 0.6 * level) * h;
+
+        const x = i * barWidth;
+        const y = h - barHeight;
+
+        fmHeroCtx.globalAlpha = 0.7;
+        fmHeroCtx.fillStyle = "#38bdf8";
+        fmHeroCtx.fillRect(x + 1, y, barWidth - 2, barHeight);
+      }
     }
   }
 
   requestAnimationFrame(loop);
 }
+
 
 startFmHeroVisualizer();
 
@@ -1854,21 +1880,28 @@ startFmHeroVisualizer();
   }
 
   // FM : lecture
-  function playFM() {
-    if (!currentFMStation || !currentFMStation.url) {
-      console.warn("[FM] Aucune station lockée ou pas d'URL");
-      return;
-    }
-
-    audio.src = currentFMStation.url;
-    audio.play().then(() => {
-      console.log("[FM] Lecture :", currentFMStation.name, currentFMStation.url);
-      isPlaying = true;
-    }).catch((err) => {
-      console.error("[FM] Erreur lecture :", err);
-      isPlaying = false;
-    });
+ function playFM() {
+  if (!currentFMStation || !currentFMStation.url) {
+    console.warn("[FM] Aucune station lockée ou pas d'URL");
+    return;
   }
+
+  // On initialise Web Audio (AnalyserNode) aussi pour la FM
+  ensureAudioContext();
+  if (audioContext && audioContext.state === "suspended") {
+    audioContext.resume().catch(() => {});
+  }
+
+  audio.src = currentFMStation.url;
+  audio.play().then(() => {
+    console.log("[FM] Lecture :", currentFMStation.name, currentFMStation.url);
+    isPlaying = true;
+  }).catch((err) => {
+    console.error("[FM] Erreur lecture :", err);
+    isPlaying = false;
+  });
+}
+
 
   function pauseFM() {
     audio.pause();
