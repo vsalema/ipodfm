@@ -401,9 +401,9 @@
 
   // --- Config "fast start" pour HLS ---
   const HLS_FAST_CONFIG = {
-    maxBufferLength: 8,               // secondes
+    maxBufferLength: 8,
     maxMaxBufferLength: 16,
-    maxBufferSize: 10 * 1000 * 1000,  // 10 MB
+    maxBufferSize: 10 * 1000 * 1000,
     liveSyncDuration: 3,
     liveMaxLatencyDuration: 10,
     startLevel: 0,
@@ -413,15 +413,57 @@
   // --- LECTURE GÉNÉRIQUE (MP3 / AAC / M3U8) ---
   let hlsInstance = null;
 
+  // 🔹 Préchargement silencieux (sans lecture)
+  function preloadStream(url) {
+    if (!url) return;
+    const isHls = url.trim().toLowerCase().includes(".m3u8");
+
+    audio.preload = "auto";
+    audio.autoplay = false;
+
+    // HLS natif
+    if (isHls && audio.canPlayType("application/vnd.apple.mpegurl")) {
+      if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+      }
+      audio.pause();
+      audio.src = url;
+      audio.load(); // demande au navigateur de bufferiser
+      return;
+    }
+
+    // HLS via hls.js
+    if (isHls && window.Hls && Hls.isSupported()) {
+      if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+      }
+      hlsInstance = new Hls(HLS_FAST_CONFIG);
+      hlsInstance.loadSource(url);
+      hlsInstance.attachMedia(audio);
+      // pas de play() ici → juste la préparation
+      return;
+    }
+
+    // Flux classique (MP3 / AAC / etc.)
+    if (hlsInstance) {
+      hlsInstance.destroy();
+      hlsInstance = null;
+    }
+    audio.pause();
+    audio.src = url;
+    audio.load();
+  }
+
+  // 🔹 Lecture réelle (avec play)
   function playStream(url) {
     if (!url) return;
 
     const isHls = url.trim().toLowerCase().includes(".m3u8");
-
-    // On met à jour le preload pour favoriser un démarrage rapide
     audio.preload = "auto";
 
-    // Cas 1 : HLS natif (Safari, iOS…)
+    // HLS natif
     if (isHls && audio.canPlayType("application/vnd.apple.mpegurl")) {
       if (hlsInstance) {
         hlsInstance.destroy();
@@ -446,7 +488,7 @@
       return;
     }
 
-    // Cas 2 : HLS via hls.js
+    // HLS via hls.js
     if (isHls && window.Hls && Hls.isSupported()) {
       if (hlsInstance) {
         hlsInstance.destroy();
@@ -479,7 +521,7 @@
       return;
     }
 
-    // Cas 3 : flux classique (MP3 / AAC / etc.)
+    // Flux classique (MP3 / AAC / etc.)
     if (hlsInstance) {
       hlsInstance.destroy();
       hlsInstance = null;
@@ -575,7 +617,7 @@
       analyser.getByteFrequencyData(vizDataArray);
 
       const center = w / 2;
-      const barCount = 20; // barres de chaque côté
+      const barCount = 20;
       const step = Math.floor(vizBufferLength / barCount);
       const barWidth = (w / 2) / barCount;
 
@@ -592,11 +634,9 @@
         fmHeroCtx.fillStyle = "#38bdf8";
         fmHeroCtx.globalAlpha = 0.8;
 
-        // Barre côté droit
         const xRight = center + i * barWidth;
         fmHeroCtx.fillRect(xRight + 1, y, barWidth - 2, barHeight);
 
-        // Barre côté gauche (symétrique)
         const xLeft = center - (i + 1) * barWidth;
         fmHeroCtx.fillRect(xLeft + 1, y, barWidth - 2, barHeight);
       }
@@ -610,7 +650,7 @@
 
   const favoriteManager = {
     key: "neo-mini-fm-favorites",
-    data: { fm: [] }, // [{ freq, name }]
+    data: { fm: [] },
 
     load() {
       try {
@@ -694,7 +734,7 @@
         freqSlider.value = fav.freq;
         updateFrequencyDisplay(fav.freq);
         showTab("radio");
-        playFM(); // autoplay à la sélection
+        playFM();
       });
 
       favoritesFmEl.appendChild(item);
@@ -733,6 +773,11 @@
       radioHeroTitle.textContent = closest.name;
       radioHeroSub.textContent = closest.rds || "";
       radioLogo.src = closest.logo || DEFAULT_LOGO;
+
+      // 🔸 Préchargement silencieux de la station quand on est locké dessus
+      if (!isPlaying && currentFMStation.url) {
+        preloadStream(currentFMStation.url);
+      }
     } else {
       currentFMStation = null;
       stationName.textContent = "Bruitage";
@@ -752,14 +797,13 @@
       return;
     }
 
-    // Pour le visualizer audio
     ensureAudioContext();
     if (audioContext && audioContext.state === "suspended") {
       audioContext.resume().catch(() => {});
     }
 
     console.log("[FM] Lecture :", currentFMStation.name, currentFMStation.url);
-    playStream(currentFMStation.url); // gère MP3 + M3U8
+    playStream(currentFMStation.url);
   }
 
   function pauseFM() {
