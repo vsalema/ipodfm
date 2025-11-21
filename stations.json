@@ -7,6 +7,15 @@
       "url": "https://icecast.radiofrance.fr/franceinter-midfi.mp3",
       "logo": "img/webradio-franceinter.png"
     },
+    
+    {
+      "freq": 904,
+      "name": "NOSTALGIE:",
+      "rds": "Info en continu",
+      "url": "https://streaming.nrjaudio.fm/oug7girb92oc?origine=radio.net",
+      "logo": "img/webradio-NOSTALGIE.png"
+    },
+    
     {
       "freq": 915,
       "name": "franceinfo:",
