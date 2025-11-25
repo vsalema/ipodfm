@@ -15,6 +15,13 @@
       "url": "https://streaming.nrjaudio.fm/oug7girb92oc?origine=radio.net",
       "logo": "img/webradio-NOSTALGIE.png"
     },
+    {
+      "freq": 905,
+      "name": "CMR",
+      "rds": "Hit Music Only",
+      "url": "https://emdireto.cmradio.pt/audio2/output-stream.m3u8",
+      "logo": "img/webradio-cmradio.png"
+    },
     
     {
       "freq": 915,
@@ -39,16 +46,6 @@
     },
     
      {
-      "freq": 904,
-      "name": "CMR",
-      "rds": "Hit Music Only",
-      "url": "https://emdireto.cmradio.pt/audio2/output-stream.m3u8",
-      "logo": "https://www.radio.fr/300/cmradio.png?version=62980aefe93f877117dfdee5658f8815"
-    },
-    
-    
-    
-    {
       "freq": 986,
       "name": "R.Alfa",
       "rds": "Hit Music Only",
