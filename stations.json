@@ -37,6 +37,17 @@
       "url": "https://streaming.nrjaudio.fm/oumvmk8fnozc?origine=fluxurlradio",
       "logo": "img/webradio-nrj.png"
     },
+    
+     {
+      "freq": 904,
+      "name": "CMR",
+      "rds": "Hit Music Only",
+      "url": "https://emdireto.cmradio.pt/audio2/output-stream.m3u8",
+      "logo": "https://www.radio.fr/300/cmradio.png?version=62980aefe93f877117dfdee5658f8815"
+    },
+    
+    
+    
     {
       "freq": 986,
       "name": "R.Alfa",
