@@ -34,7 +34,7 @@
       "freq": 943,
       "name": "Fun Radio",
       "rds": "Le son dancefloor",
-      "url": "http://icecast.funradio.fr/fun-1-44-128?listen=webCwsBCggNCQgLDQUGBAcGBg",
+      "url": "https://icecast.funradio.fr/fun-1-44-128?listen=webCwsBCggNCQgLDQUGBAcGBg",
       "logo": "img/webradio-funradio.png"
     },
     {
@@ -92,7 +92,7 @@
       "freq": 1062,
       "name": "Skyrock",
       "rds": "Premier sur le rap",
-      "url": "http://icecast.skyrock.net/s/natio_mp3_128k",
+      "url": "https://icecast.skyrock.net/s/natio_mp3_128k",
       "logo": "img/webradio-skyrock.png"
     },
     {
@@ -125,7 +125,7 @@
       "id": "france-musique",
       "name": "France Musique",
       "description": "Classique, jazz, créations",
-      "url": "http://direct.francemusique.fr/live/francemusique-midfi.mp3",
+      "url": "https://direct.francemusique.fr/live/francemusique-midfi.mp3",
       "logo": "img/webradio-francemusique.png",
       "tags": ["France", "Classique", "Jazz"]
     },
@@ -150,7 +150,7 @@
       "id": "fun-radio",
       "name": "Fun Radio",
       "description": "Le son dancefloor",
-      "url": "https://icecast.funradio.fr/fun-1-44-128?listen=webCwsBCggNCQgLDQUGBAcGBg",
+      "url": "https://funradiobe.ice.infomaniak.ch/funradiobe-high.mp3",
       "logo": "img/webradio-funradio.png",
       "tags": ["Dance", "Hits"]
     },
@@ -158,7 +158,7 @@
       "id": "rtl",
       "name": "RTL",
       "description": "Talk, actualité, divertissement",
-      "url": "http://streaming.radio.rtl.fr/rtl-1-44-128",
+      "url": "https://streaming.radio.rtl.fr/rtl-1-44-128",
       "logo": "img/webradio-rtl.png",
       "tags": ["Talk", "Info"]
     },
@@ -166,7 +166,7 @@
       "id": "europe1",
       "name": "Europe 1",
       "description": "Info & talk",
-      "url": "http://ais-live.cloud-services.paris:8000/europe1.mp3",
+      "url": "https://ais-live.cloud-services.paris:8000/europe1.mp3",
       "logo": "img/webradio-europe1.png",
       "tags": ["Info", "Talk"]
     },
@@ -174,7 +174,7 @@
       "id": "rfm",
       "name": "RFM",
       "description": "Le meilleur de la musique",
-      "url": "http://stream.rfm.fr/rfm.mp3",
+      "url": "https://stream.rfm.fr/rfm.mp3",
       "logo": "img/webradio-rfm.png",
       "tags": ["Adult Pop", "France"]
     },
