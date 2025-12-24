@@ -64,7 +64,7 @@
       "freq": 1010,
       "name": "RFM",
       "rds": "Le meilleur de la musique",
-      "url": "https://rfm.lmn.fm/rfm-59300/playlist.m3u8",
+      "url": "https://stream.rfm.fr/rfm.mp3",
       "logo": "img/webradio-rfm.png"
     },
     {
@@ -150,7 +150,7 @@
       "id": "fun-radio",
       "name": "Fun Radio",
       "description": "Le son dancefloor",
-      "url": "http://icecast.funradio.fr/fun-1-44-128",
+      "url": "https://icecast.funradio.fr/fun-1-44-128?listen=webCwsBCggNCQgLDQUGBAcGBg",
       "logo": "img/webradio-funradio.png",
       "tags": ["Dance", "Hits"]
     },
